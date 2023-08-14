@@ -1,5 +1,6 @@
 mod arrays;
 mod basics;
+mod functions;
 
 
 fn main() {
@@ -7,7 +8,10 @@ fn main() {
 
     // basics::loops_demo();
     
+    
+    // arrays::array_demo();
+    arrays::slices_demo();
+    // arrays::structs_demo();
 
-    arrays::array_demo();
-
+    functions::functions_demo();
 }

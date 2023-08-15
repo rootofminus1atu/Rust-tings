@@ -49,6 +49,8 @@ pub fn slices_demo() {
 
 
 pub fn structs_demo() {
+    
+    #[allow(dead_code)]
     #[derive(Debug)]
     struct Person {
         name: String,

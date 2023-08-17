@@ -12,7 +12,7 @@ fn generate_table(n: u32) -> String {
 
     for i in 1..=n {
         for j in 1..=n {
-            table.push_str(&format!("{:width$}", i * j, width = indent as usize));
+            table.push_str(&format!("{:width$}", i * j, width=indent));
         }
         table.push('\n')
     }

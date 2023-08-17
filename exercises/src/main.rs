@@ -8,6 +8,14 @@ fn main() {
 
 
 
+
+    let x = Box::new(5);
+    let y = Box::new(5);
+
+
+
+
+
     let s = String::from("hello");
     let sr = &s;  // "a reference is a variable that contains the address of another variable" ~ my mind
 
@@ -30,6 +38,7 @@ fn main() {
     take_str_mut_ref(sr);
 
     println!("{}", sr);
+
 }
 
 #[allow(dead_code)]

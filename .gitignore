@@ -17,6 +17,8 @@ Cargo.lock
 *.env
 */.env
 **/.env
+*/**/.env
+**/**/.env
 
 Secrets.toml
 */Secrets.toml

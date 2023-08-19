@@ -9,7 +9,7 @@ use serenity::framework::standard::macros::{command, group};
 use serenity::framework::standard::{StandardFramework, CommandResult};
 
 #[group]
-#[commands(ping)]
+#[commands(ping, dog)]
 struct General;
 
 struct Handler;
@@ -54,22 +54,20 @@ async fn ping(ctx: &Context, msg: &Message) -> CommandResult {
     Ok(())
 }
 
+
 #[command]
 async fn dog(ctx: &Context, msg: &Message) -> CommandResult {
-    // make a request to the dog api
-    // the dog api has link "https://dog.ceo/api/breeds/image/random"
-    // which returns a json object with a field "message" that contains a link to a random dog image
-    let dog_api_link = "https://dog.ceo/api/breeds/image/random";
+    let api_link = "https://dog.ceo/api/breeds/image/random";
 
-    let dog_img_link_str = reqwest::get(dog_api_link)
-        .await?
-        .json::<serde_json::Value>()
-        .await?
+    let request = reqwest::get(api_link).await?;
+
+    let json = request.json::<serde_json::Value>().await?;
+
+    let dog_img_link_str = json
         .get("message")
-        .unwrap()
-        .to_string();
+        .and_then(|link| link.as_str())
+        .unwrap_or("No link found...");// Get the string value if it exists
 
-    // gotta add serde_json and reqwest to Cargo.toml
 
     msg.reply(ctx, dog_img_link_str).await?;
 

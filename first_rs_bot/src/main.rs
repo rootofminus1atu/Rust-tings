@@ -1,5 +1,7 @@
 use std::env;
 
+use dotenv::dotenv;
+
 use serenity::async_trait;
 use serenity::prelude::*;
 use serenity::model::channel::Message;
@@ -21,12 +23,17 @@ impl EventHandler for Handler {
 
 #[tokio::main]
 async fn main() {
+    // Load environment variables from .env file
+    dotenv().ok();
+    // Now you can access environment variables using env::var
+    let token = env::var("DISCORD_TOKEN").expect("DISCORD_TOKEN not found in .env");
+
     let framework = StandardFramework::new()
         .configure(|c| c.prefix("~")) // set the bot's prefix to "~"
         .group(&GENERAL_GROUP);
 
     // Login with a bot token from the environment
-    let token = env::var("DISCORD_TOKEN").expect("token");
+        // let token = env::var("DISCORD_TOKEN").expect("token");
     let intents = GatewayIntents::all();
     let mut client = Client::builder(token, intents)
         .event_handler(Handler)
@@ -46,3 +53,26 @@ async fn ping(ctx: &Context, msg: &Message) -> CommandResult {
 
     Ok(())
 }
+
+#[command]
+async fn dog(ctx: &Context, msg: &Message) -> CommandResult {
+    // make a request to the dog api
+    // the dog api has link "https://dog.ceo/api/breeds/image/random"
+    // which returns a json object with a field "message" that contains a link to a random dog image
+    let dog_api_link = "https://dog.ceo/api/breeds/image/random";
+
+    let dog_img_link_str = reqwest::get(dog_api_link)
+        .await?
+        .json::<serde_json::Value>()
+        .await?
+        .get("message")
+        .unwrap()
+        .to_string();
+
+    // gotta add serde_json and reqwest to Cargo.toml
+
+    msg.reply(ctx, dog_img_link_str).await?;
+
+    Ok(())
+}
+

@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1>Welcome to the Home Page</h1>
+    <p>Here you can download videos from social media.</p>
+        <!-- Input for video URL -->
+        <input type="text" id="videoUrl" placeholder="Enter video URL">
+    
+        <!-- Button to initiate download -->
+        <button id="downloadButton">Download Video</button>
+
+        <!-- Button to test downloading from my backend! -->
+        <button id="testDownloadButton">Test Download Video!</button>
+        
+        <!-- Script to handle the API request -->
+        <script>
+            const fetchYtVid = (videoUrl) => {
+                // for now simple display "your vide downlaoded click below to download"
+                alert("your video downloaded click below to download")
+            }
+
+            document.addEventListener('DOMContentLoaded', () => {
+                const downloadButton = document.getElementById('downloadButton');
+                downloadButton.addEventListener('click', () => {
+                    const videoUrl = document.getElementById('videoUrl').value;
+                    
+                    fetchYtVid(videoUrl);
+                });
+            });
+
+
+
+
+            
+            const fetchTestVid = () => {
+                // Make a request to your backend to initiate the download
+                console.log("fetching test video");
+
+                fetch('/download', {
+                    method: 'GET'
+                })
+                .then(response => {
+                    console.log("response: ", response);
+                    if (response.ok) {
+                        return response.blob();
+                    } else {
+                        throw new Error('Failed to fetch the video.');
+                    }
+                })
+                .then(blob => {
+                    console.log("Got the blob:", blob);
+                    
+                    const videoUrl = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = videoUrl;
+                    a.download = 'video.mp4';
+                    a.textContent = 'Download Video';
+                    
+                    document.body.appendChild(a);
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+            };
+            
+            const testDownloadButton = document.getElementById('testDownloadButton');
+
+            testDownloadButton.addEventListener('click', () => {
+                fetchTestVid();
+            });
+        </script>
+    
+</body>
+</html>

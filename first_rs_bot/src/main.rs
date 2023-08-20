@@ -59,18 +59,18 @@ async fn ping(ctx: &Context, msg: &Message) -> CommandResult {
 async fn dog(ctx: &Context, msg: &Message) -> CommandResult {
     let api_link = "https://dog.ceo/api/breeds/image/random";
 
-    let request = reqwest::get(api_link).await?;
-
-    let json = request.json::<serde_json::Value>().await?;
+    let json = reqwest::get(api_link)
+        .await?.
+        json::<serde_json::Value>()
+        .await?;
 
     let dog_img_link_str = json
         .get("message")
         .and_then(|link| link.as_str())
-        .unwrap_or("No link found...");// Get the string value if it exists
+        .unwrap_or("No dog found...");// Get the string value if it exists
 
 
     msg.reply(ctx, dog_img_link_str).await?;
 
     Ok(())
 }
-

@@ -1,10 +1,14 @@
 #[macro_use] extern crate rocket;
 
 #[allow(unused_imports)]
-use std::path::{PathBuf, Path};
+use {
+    rustube,
+    std::path::{PathBuf, Path},
+    rocket::fs::{NamedFile, relative},
+    rocket::serde::{Deserialize, Serialize, json::Json},
+};
 
-#[allow(unused_imports)]
-use rocket::fs::{NamedFile, relative};
+
 
 #[get("/")]
 async fn index() -> Option<NamedFile> {
@@ -12,9 +16,30 @@ async fn index() -> Option<NamedFile> {
 }
 
 // method for sending the video vid.mp4 to the frontend
-#[get("/download")]
-async fn download() -> Option<NamedFile> {
+#[allow(dead_code)]
+#[get("/downloadtest")]
+async fn downloadtest() -> Option<NamedFile> {
     NamedFile::open("static/vid.mp4").await.ok()
+}
+
+
+
+
+#[derive(Debug)]
+#[derive(Deserialize)]
+#[serde(crate = "rocket::serde")]
+struct DownloadData {
+    url: String
+}
+
+
+// method for downloading a video and then allowing the user to download it from the frontend
+#[post("/download", data = "<data>")]
+fn download(data: Json<DownloadData>)  {
+    println!("data: {:?}", data);
+    let url_str = data.url.clone();
+
+    
 }
 
 #[launch]

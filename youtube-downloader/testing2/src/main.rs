@@ -17,22 +17,16 @@ fn main() {
         Ok(video) => video,
         Err(e) => panic!("Error getting video: {}", e),
     };
-    /* 
-    let best_quality = video
+
+
+
+    let valid_streams = video
         .streams()
         .iter()
         .filter(|stream| stream.includes_video_track && stream.includes_audio_track)
-        .max_by_key(|stream| stream.quality_label);
+        .collect::<Vec<_>>();
 
-    let stream = match best_quality {
-        Some(stream) => stream,
-        None => panic!("No streams found"),
-    };
-    println!("Downloading video with quality: {:?}", stream.quality_label);*/
 
-    for stream in video.streams().iter().filter(|stream| stream.includes_video_track && stream.includes_audio_track) {
-        println!("Stream quality things: {:?}", (stream.quality_label, stream.quality, stream.includes_audio_track, stream.includes_video_track));
-    }
 
     println!("Title: {}", &video.title());
 }

@@ -5,7 +5,7 @@ use {
     rustube,
     std::path::{PathBuf, Path},
     rocket::fs::{NamedFile, relative},
-    rocket::serde::{Deserialize, Serialize, json::Json},
+    rocket::serde::{Deserialize, Serialize, json::Json}
 };
 
 
@@ -38,11 +38,28 @@ struct DownloadData {
 fn download(data: Json<DownloadData>)  {
     println!("data: {:?}", data);
     let url_str = data.url.clone();
-
+    println!("data: {:?}", url_str);
     
 }
 
+
+#[get("/testlol")]
+fn testlol() -> &'static str {
+    println!("I was called lol");
+    "This is a test route"
+}
+
+
 #[launch]
 fn rocket() -> _ {
-    rocket::build().mount("/", routes![index, download])
+    rocket::build()
+        .mount("/", routes![index, download, testlol])
 }
+
+
+
+/*
+https://twitter.com/DarrenBaldwin03/status/1682028733736288258
+https://twitter.com/DarrenBaldwin03/status/1682028733736288258
+
+*/

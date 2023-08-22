@@ -21,6 +21,7 @@ use tokio::sync::{
 };
 use tower_http::auth::RequireAuthorizationLayer;
 
+// The list of users needs to be a hashmap that can be shared safely across threads, hence an Arc with RwLock
 type Users = Arc<RwLock<HashMap<usize, UnboundedSender<Message>>>>;
 static NEXT_USERID: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(1);
 
@@ -34,14 +35,15 @@ struct Msg {
 #[shuttle_runtime::main]
 async fn axum(
     #[shuttle_secrets::Secrets] secrets: SecretStore,
-    #[shuttle_static_folder::StaticFolder] static_folder: PathBuf
+    #[shuttle_static_folder::StaticFolder] static_folder: PathBuf,
 ) -> shuttle_axum::ShuttleAxum {
     // We use Secrets.toml to set the BEARER key, just like in a .env file and call it here
     let secret = secrets.get("BEARER").unwrap_or("Bear".to_string());
-   // set up router with Secrets
-   let router = router(secret, static_folder);
 
-   Ok(router.into())
+    // set up router with Secrets & use syncwrapper to make the web service work
+    let router = router(secret, static_folder);
+
+    Ok(router.into())
 }
 
 fn router(secret: String, static_folder: PathBuf) -> Router {
@@ -53,14 +55,15 @@ fn router(secret: String, static_folder: PathBuf) -> Router {
         .route("/disconnect/:user_id", get(disconnect_user))
         .layer(RequireAuthorizationLayer::bearer(&secret));
 
+    let static_assets = SpaRouter::new("/", static_folder).index_file("index.html");
     // return a new router and nest the admin route into the websocket route
-     Router::new()
+    Router::new()
         .route("/ws", get(ws_handler))
         .nest("/admin", admin)
         .layer(Extension(users))
+        .merge(static_assets)
 }
 
-// "impl IntoResponse" means we want our function to return a websocket connection
 async fn ws_handler(ws: WebSocketUpgrade, Extension(state): Extension<Users>) -> impl IntoResponse {
     ws.on_upgrade(|socket| handle_socket(socket, state))
 }
@@ -71,16 +74,21 @@ async fn handle_socket(stream: WebSocket, state: Users) {
     // By splitting the websocket into a receiver and sender, we can send and receive at the same time.
     let (mut sender, mut receiver) = stream.split();
 
-    // Create a new channel for async task management (stored in Users hashmap)
-    let (tx, mut rx): (UnboundedSender<Message>, UnboundedReceiver<Message>) = mpsc::unbounded_channel();
+    // Create a new channel for async task management
+    let (tx, mut rx): (UnboundedSender<Message>, UnboundedReceiver<Message>) =
+        mpsc::unbounded_channel();
 
     // If a message has been received, send the message (expect on error)
     tokio::spawn(async move {
+        // If a message has been received, send a message
         while let Some(msg) = rx.recv().await {
             sender.send(msg).await.expect("Error while sending message");
         }
         sender.close().await.unwrap();
     });
+
+    // insert the message into the HashMap - locks the Arc value to allow writing
+    state.write().await.insert(my_id, tx);
 
     // if there's a message and the message is OK, broadcast it along all available open websocket connections
     while let Some(Ok(result)) = receiver.next().await {
@@ -89,19 +97,13 @@ async fn handle_socket(stream: WebSocket, state: Users) {
             broadcast_msg(result, &state).await;
         }
     }
+
+    // This client disconnected
+    disconnect(my_id, &state).await;
 }
 
-async fn broadcast_msg(msg: Message, users: &Users) {
-// "If let" is basically a simple match statement, which is perfect for this use case
-// as we want to only match against one condition.
-    if let Message::Text(msg) = msg {
-        for (&_uid, tx) in users.read().await.iter() {
-            tx.send(Message::Text(msg.clone()))
-                .expect("Failed to send Message")
-        }
-    }
-}
-
+// If the message is a websocket message and no errors, return it - else, return Ok(result)
+// which is required by the server to be able to broadcast the message
 fn enrich_result(result: Message, id: usize) -> Result<Message, serde_json::Error> {
     match result {
         Message::Text(msg) => {
@@ -114,6 +116,18 @@ fn enrich_result(result: Message, id: usize) -> Result<Message, serde_json::Erro
     }
 }
 
+// Send received websocket message out to all open available WS connections
+async fn broadcast_msg(msg: Message, users: &Users) {
+    if let Message::Text(msg) = msg {
+        for (&_uid, tx) in users.read().await.iter() {
+            tx.send(Message::Text(msg.clone()))
+                .expect("Failed to send Message")
+        }
+    }
+}
+
+// Disconnect a user manually - this is for admin purposes, eg if someone is being offensive in the chat
+// you will want to be able to kick them out
 async fn disconnect_user(
     Path(user_id): Path<usize>,
     Extension(users): Extension<Users>,
@@ -127,6 +141,11 @@ async fn disconnect(my_id: usize, users: &Users) {
     println!("Good bye user {}", my_id);
     users.write().await.remove(&my_id);
     println!("Disconnected {my_id}");
+}
+
+// handle internal server errors
+async fn handle_error(err: std::io::Error) -> impl IntoResponse {
+    (StatusCode::INTERNAL_SERVER_ERROR, format!("{:?}", err))
 }
 
 

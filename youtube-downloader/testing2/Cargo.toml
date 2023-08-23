@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 rustube = { version = "0.6.0", features = ["blocking"] }
+url = "2.4.0"

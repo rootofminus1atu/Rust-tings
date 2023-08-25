@@ -4,6 +4,9 @@ mod functions;
 mod structs;
 mod enums;
 mod vectors;
+mod hashmaps;
+
+
 
 fn main() {
     // basics::basics_demo();
@@ -20,5 +23,7 @@ fn main() {
     // enums::enums_demo();
     // enums::pennies_demo();
 
-    vectors::vectors_demo();
+    hashmaps::display();
+
+
 }

@@ -1,4 +1,4 @@
-use std::io;
+use std::{io, collections::HashMap};
 use rand::Rng;
 use std::cmp::Ordering;
 
@@ -32,3 +32,4 @@ fn main() {
 
     println!("You win!");
 }
+

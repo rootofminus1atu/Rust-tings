@@ -1,6 +1,6 @@
 pub fn display() {
-    let text = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    let rows = 5;
+    let text = "ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    let rows = 9;
     let split = zigzag(text, rows);
 
     for row in &split {

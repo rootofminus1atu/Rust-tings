@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 mod arrays;
 mod basics;
 mod functions;
@@ -6,6 +8,7 @@ mod enums;
 mod vectors;
 mod hashmaps;
 mod more_ownership;
+mod traits;
 
 
 fn main() {
@@ -23,7 +26,6 @@ fn main() {
     // enums::enums_demo();
     // enums::pennies_demo();
 
-    hashmaps::display();
-
+    traits::display();
 
 }

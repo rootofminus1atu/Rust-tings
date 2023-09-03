@@ -1,11 +1,8 @@
 pub fn display() {
-    let text = "ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZ";
-    let rows = 9;
-    let split = zigzag(text, rows);
+    let text = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    let rows = 5;
 
-    for row in &split {
-        println!("{}", row);
-    }
+    let split = zigzag(text, rows);
 
     print_zigzag_style(&split, rows);
 }

@@ -1,6 +1,5 @@
 use std::collections::HashMap;
 use std::io;
-use std::io::BufRead;
 
 pub fn display() {
     println!("Departments App");

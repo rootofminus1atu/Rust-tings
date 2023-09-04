@@ -2,12 +2,22 @@ use std::thread;
 use std::time::Duration;
 
 pub fn display() {
-
+/* 
     let list = vec![1, 10, 100];
 
-    for item in ZigzagIter::new(&list).limit_to_steps(6) {
+    for item in ZigzagIter::new(&list).limit_to_steps(5) {
         println!("{}", item);
         thread::sleep(Duration::from_secs(1));
+    }*/
+
+    let word = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+    let rows = 5;
+
+    let list = vec![1, 10, 100, 1000, 10000];
+
+    for item in ZigzagIter::new(&list).limit_to_steps(100) {
+        println!("{}", item);
+        thread::sleep(Duration::from_millis(100));
     }
 
 }
@@ -40,11 +50,11 @@ impl<'a, T> ZigzagIter<'a, T> {
     fn tune_index(&mut self) {
         if self.index == self.items.len() - 1 {
             self.direction = false;
-            self.index -= 1;
         } else if self.index == 0 {
             self.direction = true;
-            self.index += 1;
-        } else if self.direction {
+        }
+
+        if self.direction {
             self.index += 1;
         } else {
             self.index -= 1; 
@@ -77,3 +87,6 @@ impl<'a, T> Iterator for ZigzagIter<'a, T> {
         }
     }
 }
+
+
+

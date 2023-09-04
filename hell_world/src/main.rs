@@ -9,6 +9,8 @@ mod vectors;
 mod hashmaps;
 mod more_ownership;
 mod traits;
+mod closures;
+mod zigzag_iter;
 
 
 fn main() {
@@ -26,6 +28,6 @@ fn main() {
     // enums::enums_demo();
     // enums::pennies_demo();
 
-    traits::display();
+    zigzag_iter::display();
 
 }

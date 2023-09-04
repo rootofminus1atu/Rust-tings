@@ -6,6 +6,7 @@ pub fn display() {
 
     {
         let number_list = vec![34, 50, 25, 100, 65];
+        println!("The number list is {:?}", number_list);
 
         // result = largest_i32(&number_list);  // use clone() to outlize the list
         println!("The largest number is {}", result);

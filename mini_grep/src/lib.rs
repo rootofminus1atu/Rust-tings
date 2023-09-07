@@ -30,7 +30,8 @@ pub fn run(config: Config) -> Result<(), Box<dyn std::error::Error>> {
 }
 
 pub fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
-    contents.lines()
+    contents
+        .lines()
         .filter(|line| line.contains(query))
         .collect()
 }
@@ -38,26 +39,31 @@ pub fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
 pub fn search_case_insensitive<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
     let query = query.to_lowercase();
 
-    contents.lines()
+    contents
+        .lines()
         .filter(|line| line.to_lowercase().contains(&query))
         .collect()
 }
 
 
-pub struct Config<'a> {
-    query: &'a str,
-    file_path: &'a str,
+pub struct Config {
+    query: String,
+    file_path: String,
     case_sensitive: bool,
 }
-
-impl Config<'_> {
-    pub fn new<'a>(query: &'a str, file_path: &'a str) -> Config<'a> {
+impl Config {
+    pub fn new(query: &str, file_path: &str) -> Config {
         let case_sensitive = env::var("CASE_INSENSITIVE").is_err();
-        
-        Config { query, file_path, case_sensitive }
+
+        Config {
+            query: query.to_string(),
+            file_path: file_path.to_string(),
+            case_sensitive,
+        }
     }
 
-    pub fn from_args<'a>(args: &'a [String]) -> Result<Config<'a>, &'static str> {
+
+    pub fn from_args_slice<'a>(args: &'a [String]) -> Result<Config, &'static str> {
         if args.len() < 3 {
             return Err("Not enough arguments");
         }
@@ -66,5 +72,21 @@ impl Config<'_> {
         let file_path = &args[2];
 
         Ok(Config::new(query, file_path))
+    }
+
+    pub fn from_args(args: impl Iterator<Item = String>) -> Result<Config, &'static str> {
+        let mut args = args.skip(1); // Skip the program name.
+
+        let query = match args.next() {
+            Some(arg) => arg,
+            None => return Err("Didn't get a query string"),
+        };
+
+        let file_path = match args.next() {
+            Some(arg) => arg,
+            None => return Err("Didn't get a file path"),
+        };
+
+        Ok(Config::new(&query, &file_path))
     }
 }

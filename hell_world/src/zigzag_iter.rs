@@ -15,7 +15,7 @@ pub fn display() {
 
     let list = vec![1, 10, 100, 1000, 10000];
 
-    for item in ZigzagIter::new(&list).limit_to_steps(100) {
+    for item in ZigzagIter::new(&list).limit_to_steps(30) {
         println!("{}", item);
         thread::sleep(Duration::from_millis(100));
     }

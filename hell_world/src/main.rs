@@ -12,7 +12,9 @@ mod more_ownership;
 mod traits;
 mod closures;
 mod zigzag_iter;
+mod linked_list;
 mod boxes;
+mod boxes2;
 
 fn main() {
     // basics::basics_demo();
@@ -31,6 +33,6 @@ fn main() {
 
     // zigzag_iter::display();
 
-    boxes::display();
+    linked_list::display();
 
 }

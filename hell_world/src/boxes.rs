@@ -1,112 +1,40 @@
+use std::ops::Deref;
+
 pub fn display() {
+    println!("Hello, world!");
+
+    let n = 5;
+    let point = Point { x: 1, y: 2 };
+
+    let ref_n = &n;
+    let ref_point = &point;
+
+    borrow_point(&point);
+
+    let boxed_n = Box::new(n);
+
+    let point = Point { x: 1, y: 2 };
+    let boxed_point = Box::new(point);
+
+    borrow_point(&*boxed_point);
+    borrow_point(boxed_point.deref());
     
-    let list = Cons(1, Box::new(Cons(2, Box::new(Cons(3, Box::new(Nil))))));
+    let a = boxed_point.deref();
+    let a = *boxed_point;
 
-    let linkedlist = LinkedList {
-        head: Some(Box::new(Node {
-            data: 1,
-            next: Some(Box::new(Node {
-                data: 2,
-                next: None,
-            }))
-        }))
-    };
-
-    let mut better_list: LinkedList<i32> = LinkedList::new();
-    println!("better_list = {:?}", better_list);
-    better_list.push(5);
-    better_list.pull();
-    better_list.pull();
-    
-
-
-}
-use List::{Cons, Nil};
-enum List<T> {
-    Nil,
-    Cons(T, Box<List<T>>),
+    // println!("boxed_n = {:?}", boxed_point);
 }
 
 #[derive(Debug)]
-struct Node<T> {
-    data: T,
-    next: Option<Box<Node<T>>>,
+struct Point {
+    x: i32,
+    y: i32,
 }
 
-impl<T> Node<T> {
-    fn new(data: T) -> Self {
-        Node { data, next: None }
-    }
-
-    fn new_boxed(data: T) -> Box<Self> {
-        Box::new(Node { data, next: None })
-    }
+fn borrow_point(point: &Point) {
+    println!("borrow_point: {:?}", point);
 }
 
-#[derive(Debug)]
-struct LinkedList<T> {
-    head: Option<Box<Node<T>>>,
-}
-
-impl<T> LinkedList<T> where T: std::fmt::Debug {
-    fn new() -> Self {
-        LinkedList { head: None }
-    }
-
-    fn push(&mut self, data: T) {
-        let mut new_node = Node::new_boxed(data);
-
-        match self.head.take() {
-            None => self.head = Some(new_node),
-            Some(old_head) => {
-                new_node.next = Some(old_head);
-                self.head = Some(new_node);
-            }
-        }
-    }
-
-    fn pull(&mut self) {
-        /*
-        if self.head.is_none() {
-            return;
-        }
-
-        let first_node = self.head.take().unwrap();
-        self.head = first_node.next;
-        */
-        match self.head.take() {
-            None => return,
-            Some(old_head) => {
-                self.head = old_head.next;
-            }
-        }
-    }
-
-    fn append(&mut self, data: T) {
-        if self.head.is_none() {
-            self.head = Some(Node::new_boxed(data));
-            return;
-        }
-
-        let mut curr = &mut self.head;
-        while curr.is_some() {
-            curr = &mut curr.as_mut().unwrap().next;
-        }
-        
-        // curr.unwrap().next = Some(Node::new_boxed(data));
-
-
-        let mut curr: &mut Option<Box<Node<T>>> = &mut self.head;
-        while curr.is_some() && curr.as_ref().unwrap().next.is_some() {
-            curr = &mut curr.as_mut().unwrap().next;
-        }
-
-        if curr.is_none() {
-            self.head = Some(Node::new_boxed(data));
-        } else {
-            curr.as_mut().unwrap().next = Some(Node::new_boxed(data));
-        }
-
-
-    }
+fn take_point(point: Point) {
+    println!("take_point: {:?}", point);
 }

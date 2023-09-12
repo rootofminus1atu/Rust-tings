@@ -74,9 +74,11 @@ impl<T> LinkedList<T> where T: std::fmt::Debug {
 
     fn go_to_back(&mut self) -> &mut Option<Box<Node<T>>> {
         let mut tracker: &mut Option<Box<Node<T>>> = &mut self.head;
+
         while tracker.is_some() {
             tracker = &mut tracker.as_mut().unwrap().next;
         }
+        
         tracker
     }
 

@@ -10,45 +10,55 @@ use cleverbot::CleverbotConversation;
 // imports work here
 
 use std::collections::HashMap;
+
 use reqwest::header::COOKIE;
 use reqwest::Client;
 
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug)]
+#[derive(Deserialize, Serialize)]
+struct ChuckNorrisJoke {
+    value: String,
+}
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    let chuck_api_url = "https://api.chucknorris.io/jokes/random";
 
-    let mut conversation = CleverbotConversation::new(2);
-    conversation.initialize_cookies().await?;
+    let joke: ChuckNorrisJoke = reqwest::get(chuck_api_url)
+        .await?
+        .json()
+        .await?;
 
-    let stim = "stimulus=asd&cb_settings_scripting=no&islearning=1&icognoid=wsf&icognocheck=5c98e0c77126e13c606adac5c0cc2124";
-    //let res = conversation.sample_signal(stim).await?;
-
-    //println!("{}", res);
+    println!("body = {:?}", joke);
 
 
-    // Create a reqwest Client
-    let client = Client::new();
 
-    // Define the target URL
+    let gen_joke: serde_json::Value = reqwest::get(chuck_api_url)
+        .await?
+        .json()
+        .await?;
+
+    println!("body = {:?}", gen_joke);
+
+    let gen_joke_val = gen_joke.get("value").unwrap().as_str().unwrap();
+    println!("body = {:?}", gen_joke_val);
+
+
+
     let url = "https://www.cleverbot.com/webservicemin?uc=UseOfficialCleverbotAPI";
+    let payload = "stimulus=hello&cb_settings_scripting=no&islearning=1&icognoid=wsf&icognocheck=421e34f1f2a875aae4ed736e04cb1265";
+    let cookie = "XVIS=TE1939AFFIAGAYQZN8T31";
 
-    // Create a HashMap for cookies (self.cookies in Python)
-    let mut cookies = HashMap::new();
-    cookies.insert("cookie_name", "cookie_value"); // Replace with your actual cookies
-
-    // Define the payload as a string (payload in Python)
-    let payload = "stimulus=asd&cb_settings_scripting=no&islearning=1&icognoid=wsf&icognocheck=5c98e0c77126e13c606adac5c0cc2124"; // Replace with your actual payload
-
-    // Create a reqwest RequestBuilder for the POST request
+    let client = Client::new();
     let request_builder = client
         .post(url)
-        .header(COOKIE, "XVIS=TE1939AFFIAGAYQZN8T31") // Replace with your actual cookies
+        .header(COOKIE, cookie) 
         .body(payload);
 
-    // Send the POST request
     let response = request_builder.send().await?;
 
-    // Check the response status code
     if response.status().is_success() {
         let response_text = response.text().await?;
         println!("Response: {}", response_text);
@@ -58,7 +68,6 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     Ok(())
 }
-
 
 
 

@@ -3,10 +3,23 @@ use poise::serenity_prelude as serenity;
 use shuttle_secrets::SecretStore;
 use shuttle_poise::ShuttlePoise;
 use serde::{Deserialize, Serialize};
+use poise::Event;
 
-struct Data {} // User data, which is stored and accessible in all command invocations
+use std::path::PathBuf;
+use std::fs;
+
+use tracing::info;
+use reqwest::Client;
+use serde_json::json;
+
+struct Data {
+    static_folder: PathBuf,
+} 
+// User data, which is stored and accessible in all command invocations
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
+
+
 
 /// Responds with "world!"
 #[poise::command(slash_command)]
@@ -33,8 +46,79 @@ async fn chuck(ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
 
+
+
+
+
+
+async fn get_clevreq(msg: &str) -> Result<String, Error> {
+    let api_key = "lol";
+
+    // add error handling
+    // TODO:
+    // clean up the code, divide it into files
+    // get rid of the " in the response, possibly in the fastapi
+    // struct-ify, generate the cookie
+    // struct-ify, it's important
+    // some error handling in case cleverbot dies
+    // add context
+    // add sessions for each server/dm
+    // something something db
+    // add authentication key generation and better security (fastapi)
+    // improve fastapi too
+        
+    let response = Client::new()
+        .post()
+        .header("cookie", )
+        .header("clevreq-api-key", api_key)
+        .body(serde_json::to_string(&json!({
+            "stimulus": msg,
+            "context": Vec::<String>::new(),
+        }))?)
+        .send()
+        .await?
+        .text()
+        .await?;
+
+    Ok(response)
+}
+
+
+#[poise::command(slash_command)]
+async fn path(ctx: Context<'_>) -> Result<(), Error> {
+    ctx.defer().await?;
+
+    // let response = get_cleverbot_response("hello", ctx.data().static_folder.join("clevreq.exe"));
+    // NOPE no executables allowed
+    // guess I'll create something serverless to respond
+    // ex: deta space, aws lambda, pythonanywhere
+
+    let api_key = "lol";
+        
+    let response = Client::new()
+        .post()
+        .header("cookie", )
+        .header("clevreq-api-key", api_key)
+        .body(serde_json::to_string(&json!({
+            "stimulus": "Are you a bot?",
+            "context": vec!["hello", "hi"],
+        }))?)
+        .send()
+        .await?
+        .text()
+        .await?;
+
+    ctx.say(format!("From Cleverbot: `{}`", response)).await?;
+
+    Ok(())
+}
+
+
 #[shuttle_runtime::main]
-async fn poise(#[shuttle_secrets::Secrets] secret_store: SecretStore) -> ShuttlePoise<Data, Error> {
+async fn poise(
+    #[shuttle_secrets::Secrets] secret_store: SecretStore,
+    #[shuttle_static_folder::StaticFolder] static_folder: PathBuf,
+) -> ShuttlePoise<Data, Error> {
     // Get the discord token set in `Secrets.toml`
     let discord_token = secret_store
         .get("DISCORD_TOKEN")
@@ -42,15 +126,20 @@ async fn poise(#[shuttle_secrets::Secrets] secret_store: SecretStore) -> Shuttle
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
-            commands: vec![hello(), chuck()],
+            commands: vec![hello(), chuck(), path()],
+            event_handler: |_ctx, event, _framework, _data| {
+                Box::pin(event_handler(_ctx, event, _framework, _data))
+            },
             ..Default::default()
         })
         .token(discord_token)
-        .intents(serenity::GatewayIntents::non_privileged())
+        .intents(serenity::GatewayIntents::non_privileged() | serenity::GatewayIntents::MESSAGE_CONTENT)
         .setup(|ctx, _ready, framework| {
             Box::pin(async move {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
-                Ok(Data {})
+                Ok(Data {
+                    static_folder: static_folder,
+                })
             })
         })
         .build()
@@ -58,4 +147,31 @@ async fn poise(#[shuttle_secrets::Secrets] secret_store: SecretStore) -> Shuttle
         .map_err(shuttle_runtime::CustomError::new)?;
 
     Ok(framework.into())
+}
+
+
+
+async fn event_handler(
+    ctx: &serenity::Context,
+    event: &Event<'_>,
+    _framework: poise::FrameworkContext<'_, Data, Error>,
+    data: &Data,
+) -> Result<(), Error> {
+    match event {
+        Event::Ready { data_about_bot } => {
+            println!("Logged in as {}", data_about_bot.user.name);
+        }
+        Event::Message { new_message } => {
+            // if bot mentioned
+            if new_message.mentions_me(ctx).await? {
+                let response = get_clevreq(&new_message.content).await?;
+
+                new_message
+                    .reply(ctx, response)
+                    .await?;
+            }
+        }
+        _ => {}
+    }
+    Ok(())
 }

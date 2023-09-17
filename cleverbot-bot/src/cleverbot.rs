@@ -63,10 +63,11 @@ impl CleverbotConversation {
 
     pub async fn sample_signal(&self, stimulus: &str) -> Result<String, Box<dyn std::error::Error>> {
         let url = format!("https://www.cleverbot.com/webservicemin?uc=UseOfficialCleverbotAPI&",);
+        let cookie = "hi";
 
         let body = reqwest::Client::new()
             .post(url)
-            .header("cookie", "XVIS=TE1939AFFIAGAYQZN8T31")
+            .header("cookie", cookie)
             .body(stimulus.to_string())
             .send()
             .await?

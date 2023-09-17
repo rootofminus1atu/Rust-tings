@@ -7,13 +7,13 @@ mod utils {
 
 mod cleverbot;
 use cleverbot::CleverbotConversation;
-// imports work here
+use serde_json::json;
 
 use std::collections::HashMap;
-
+use std::process::{Command, Stdio};
+use std::vec;
 use reqwest::header::COOKIE;
 use reqwest::Client;
-
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug)]
@@ -22,49 +22,76 @@ struct ChuckNorrisJoke {
     value: String,
 }
 
+fn get_clevereq_path() -> PathBuf {
+    let mut adaptable_path = PathBuf::from(".");
+    adaptable_path.push("src");
+
+    if cfg!(windows) {
+        adaptable_path.push("clevreq.exe");
+    } else {
+        adaptable_path.push("clevreq");
+    };
+
+    adaptable_path
+}
+
+fn get_cleverbot_response() -> Result<String, String> {
+    // Define the command to run the Python script
+    let python_exe = get_clevereq_path(); // Replace with the actual path
+    let cookie = "";
+    let payload = "";
+
+    // Execute the Python script as a subprocess
+    let output = Command::new(python_exe)
+        .arg("--cookie")
+        .arg(cookie)
+        .arg("--payload")
+        .arg(payload)
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .output()
+        .expect("Failed to execute command");
+
+    // Check if the Python script executed successfully
+    if output.status.success() {
+        // Capture and print the output of the Python script
+        let stdout = String::from_utf8_lossy(&output.stdout);
+        return Ok(stdout.to_string());
+    } else {
+        // Capture and print any error messages
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(stderr.to_string());
+    }
+
+
+}
+
+use std::path::{Path, PathBuf};
+
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let chuck_api_url = "https://api.chucknorris.io/jokes/random";
+    // time to use paths and pthbufs to get to the python executable
+    // remember that linux and windows are different
 
-    let joke: ChuckNorrisJoke = reqwest::get(chuck_api_url)
-        .await?
-        .json()
+    // let response = get_cleverbot_response()?;
+    // println!("response is: {}", response);
+    let api_key = "lol";
+    let cookie = "hi";
+    let api_str = "";
+        
+    let res = Client::new()
+        .post(api_str)
+        .header("cookie", cookie)
+        .header("clevreq-api-key", api_key)
+        .body(serde_json::to_string(&json!({
+            "stimulus": "nah",
+            "context": vec![ "do you wanna build a snowman?", "hi" ],
+        }))?)
+        .send()
         .await?;
 
-    println!("body = {:?}", joke);
+    println!("{}", res.text().await?);
 
-
-
-    let gen_joke: serde_json::Value = reqwest::get(chuck_api_url)
-        .await?
-        .json()
-        .await?;
-
-    println!("body = {:?}", gen_joke);
-
-    let gen_joke_val = gen_joke.get("value").unwrap().as_str().unwrap();
-    println!("body = {:?}", gen_joke_val);
-
-
-
-    let url = "https://www.cleverbot.com/webservicemin?uc=UseOfficialCleverbotAPI";
-    let payload = "stimulus=hello&cb_settings_scripting=no&islearning=1&icognoid=wsf&icognocheck=421e34f1f2a875aae4ed736e04cb1265";
-    let cookie = "XVIS=TE1939AFFIAGAYQZN8T31";
-
-    let client = Client::new();
-    let request_builder = client
-        .post(url)
-        .header(COOKIE, cookie) 
-        .body(payload);
-
-    let response = request_builder.send().await?;
-
-    if response.status().is_success() {
-        let response_text = response.text().await?;
-        println!("Response: {}", response_text);
-    } else {
-        println!("Request failed with status code: {:?}", response.status());
-    }
 
     Ok(())
 }

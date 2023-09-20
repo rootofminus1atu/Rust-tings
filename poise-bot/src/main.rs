@@ -6,7 +6,6 @@ use serde::{Deserialize, Serialize};
 use poise::Event;
 
 use std::path::PathBuf;
-use std::fs;
 
 use tracing::info;
 use reqwest::Client;
@@ -14,6 +13,8 @@ use serde_json::json;
 
 struct Data {
     static_folder: PathBuf,
+    api_link: String,
+    api_key: String,
 } 
 // User data, which is stored and accessible in all command invocations
 type Error = Box<dyn std::error::Error + Send + Sync>;
@@ -65,7 +66,8 @@ async fn get_clevreq(msg: &str) -> Result<String, Error> {
     // add sessions for each server/dm
     // something something db
     // add authentication key generation and better security (fastapi)
-    // improve fastapi too
+    // improve fastapi 
+    
         
     let response = Client::new()
         .post()
@@ -84,35 +86,6 @@ async fn get_clevreq(msg: &str) -> Result<String, Error> {
 }
 
 
-#[poise::command(slash_command)]
-async fn path(ctx: Context<'_>) -> Result<(), Error> {
-    ctx.defer().await?;
-
-    // let response = get_cleverbot_response("hello", ctx.data().static_folder.join("clevreq.exe"));
-    // NOPE no executables allowed
-    // guess I'll create something serverless to respond
-    // ex: deta space, aws lambda, pythonanywhere
-
-    let api_key = "lol";
-        
-    let response = Client::new()
-        .post()
-        .header("cookie", )
-        .header("clevreq-api-key", api_key)
-        .body(serde_json::to_string(&json!({
-            "stimulus": "Are you a bot?",
-            "context": vec!["hello", "hi"],
-        }))?)
-        .send()
-        .await?
-        .text()
-        .await?;
-
-    ctx.say(format!("From Cleverbot: `{}`", response)).await?;
-
-    Ok(())
-}
-
 
 #[shuttle_runtime::main]
 async fn poise(
@@ -126,7 +99,7 @@ async fn poise(
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
-            commands: vec![hello(), chuck(), path()],
+            commands: vec![hello(), chuck()],
             event_handler: |_ctx, event, _framework, _data| {
                 Box::pin(event_handler(_ctx, event, _framework, _data))
             },
@@ -139,6 +112,8 @@ async fn poise(
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
                 Ok(Data {
                     static_folder: static_folder,
+                    api_link: secret_store.get("API_LINK").context("'API_LINK' was not found")?,
+                    api_key: secret_store.get("API_KEY").context("'API_KEY' was not found")?,
                 })
             })
         })

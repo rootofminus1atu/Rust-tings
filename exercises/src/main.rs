@@ -9,6 +9,7 @@ mod vectors_dicts;
 mod departments_app;
 mod command_maker;
 mod mini_grep;
+mod coord_geo;
 
 mod lists_questionmark;
 
@@ -23,5 +24,5 @@ fn main() {
     // command_maker::display();
     // lists_questionmark::display();
 
-    mini_grep::display();
+    coord_geo::display();
 }

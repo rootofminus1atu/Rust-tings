@@ -15,6 +15,7 @@ mod zigzag_iter;
 mod linked_list;
 mod boxes;
 mod boxes2;
+mod enum_q;
 
 fn main() {
     // basics::basics_demo();
@@ -33,6 +34,6 @@ fn main() {
 
     // zigzag_iter::display();
 
-    linked_list::display();
-
+    // linked_list::display();
+    enum_q::display();
 }

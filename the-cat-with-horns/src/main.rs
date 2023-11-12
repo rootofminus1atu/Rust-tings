@@ -3,17 +3,31 @@ use poise::serenity_prelude as serenity;
 use shuttle_poise::ShuttlePoise;
 use shuttle_secrets::SecretStore;
 
-struct Data {} // User data, which is stored and accessible in all command invocations
+mod helpers {
+    pub mod popequotestruct;
+    pub mod my_embeds;
+    pub mod datetime;
+}
+
+mod commands {
+    pub mod fun;
+    pub mod randomizer;
+    pub mod info;
+}
+use commands::fun::{hello, oracle, kazakhstan, sashley};
+use commands::randomizer::{fox, popequote};
+use commands::info::{botinfo, serverinfo};
+
+
+
+pub struct Data {} // User data, which is stored and accessible in all command invocations
 type Error = Box<dyn std::error::Error + Send + Sync>;
 type Context<'a> = poise::Context<'a, Data, Error>;
 
-/// Responds with "world!"
-#[poise::command(slash_command)]
-async fn hello(ctx: Context<'_>) -> Result<(), Error> {
-    ctx.say("world!").await?;
-    println!("Hello command run!");
-    Ok(())
-}
+
+
+
+
 
 #[shuttle_runtime::main]
 async fn poise(#[shuttle_secrets::Secrets] secret_store: SecretStore) -> ShuttlePoise<Data, Error> {
@@ -24,11 +38,29 @@ async fn poise(#[shuttle_secrets::Secrets] secret_store: SecretStore) -> Shuttle
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {
-            commands: vec![hello()],
+            commands: vec![
+                hello(),
+                oracle(),
+                sashley(),
+                kazakhstan(),
+                fox(),
+                popequote(),
+                botinfo(),
+                serverinfo()
+                ],
+            prefix_options: poise::PrefixFrameworkOptions {
+                prefix: Some("!".into()),
+                ..Default::default()
+            },
             ..Default::default()
         })
         .token(discord_token)
-        .intents(serenity::GatewayIntents::non_privileged())
+        .intents(
+            serenity::GatewayIntents::non_privileged() 
+            | serenity::GatewayIntents::MESSAGE_CONTENT
+            | serenity::GatewayIntents::GUILD_MEMBERS
+            | serenity::GatewayIntents::GUILD_PRESENCES
+        )
         .setup(|ctx, _ready, framework| {
             Box::pin(async move {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;

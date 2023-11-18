@@ -1,5 +1,7 @@
+use std::collections::HashMap;
+
 use crate::{Context, Error};
-use poise::serenity_prelude::{self as serenity, Color, User};
+use poise::serenity_prelude::{self as serenity, Color, User, OnlineStatus, Channel, ChannelType, ChannelId, GuildChannel};
 use serenity::{CreateEmbed, CreateEmbedFooter};
 use crate::helpers::my_embeds::send_embed;
 use crate::helpers::datetime::pretty_date;
@@ -10,7 +12,8 @@ pub async fn botinfo(ctx: Context<'_>) -> Result<(), Error> {
     let me = ctx.serenity_context().cache.current_user();
     let me_user = User::from(me);
 
-    let owners = &ctx.framework().options().owners;
+    // use this later probably
+    let _owners = &ctx.framework().options().owners;
 
     let mut footer = CreateEmbedFooter::default();
     footer.text(format!("Creation date: {}", pretty_date(&me_user.created_at())));
@@ -36,7 +39,8 @@ pub async fn serverinfo(ctx: Context<'_>) -> Result<(), Error> {
     let g = ctx.guild().ok_or("I don't think you're in server rn")?;
     let owner = g.owner_id.to_user(&ctx).await?;
 
-
+    let mut footer = CreateEmbedFooter::default();
+    footer.text(format!("Creation date: {}", pretty_date(&g.id.created_at())));
 
     let mut embed = CreateEmbed::default();
     embed.title("Server information")
@@ -45,9 +49,46 @@ pub async fn serverinfo(ctx: Context<'_>) -> Result<(), Error> {
             🔹**Id:** {}
             🔹**Owner:** {}"
             , g.name, g.id, owner.name))
-        .color(Color::BLURPLE);
+        .color(Color::BLURPLE)
+        .field(
+            "Members:", format!("
+            🔹**All:** {}
+            🔹**Online:** {}"
+            , g.member_count, g.members_with_status(OnlineStatus::Online).len()), 
+            true)
+        .field(
+            "Channels: ", 
+            format!("
+            🔹**Text:** {}
+            🔹**Voice:** {}
+            ", 
+            filter_channels_by_type(&g.channels, ChannelType::Text).len(), 
+            filter_channels_by_type(&g.channels, ChannelType::Voice).len()),
+            true)
+        .set_footer(footer);
+
+    if let Some(icon) = g.icon_url() {
+        embed.thumbnail(icon);
+    }
+    
 
     send_embed(ctx, embed).await?;
-
+                    
     Ok(())
+}
+
+
+
+fn filter_channels_by_type(channels: &HashMap<ChannelId, Channel>, channel_type: ChannelType) -> Vec<&GuildChannel> {
+    channels
+        .iter()
+        .filter_map(|(_, channel)| {
+            if let Channel::Guild(guild_channel) = channel {
+                if guild_channel.kind == channel_type {
+                    return Some(guild_channel);
+                }
+            }
+            None
+        })
+        .collect()
 }

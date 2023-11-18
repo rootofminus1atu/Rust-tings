@@ -14,7 +14,7 @@ mod commands {
     pub mod randomizer;
     pub mod info;
 }
-use commands::fun::{hello, oracle, kazakhstan, sashley};
+use commands::fun::{hello, oracle, kazakhstan, sashley, bite};
 use commands::randomizer::{fox, popequote};
 use commands::info::{botinfo, serverinfo};
 
@@ -45,6 +45,7 @@ async fn poise(#[shuttle_secrets::Secrets] secret_store: SecretStore) -> Shuttle
                 kazakhstan(),
                 fox(),
                 popequote(),
+                bite(),
                 botinfo(),
                 serverinfo()
                 ],

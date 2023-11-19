@@ -1,6 +1,5 @@
 use poise::serenity_prelude::{User, Mentionable};
-use rand::seq::SliceRandom;
-use rand;
+use crate::helpers::misc::random_choice;
 
 use crate::{Context, Error};
 
@@ -19,13 +18,7 @@ pub async fn oracle(
     Ok(())
 }
 
-fn get_random_gif<'a>(gifs: &[&'a str]) -> Option<&'a str>  {
-    let mut rng = rand::thread_rng();
-
-    gifs.choose(&mut rng).copied()
-}
-
-/// bite someone
+/// Bite someone
 #[poise::command(slash_command)]
 pub async fn bite(
     ctx: Context<'_>,
@@ -38,7 +31,7 @@ pub async fn bite(
         "https://tenor.com/view/funny-cat-bit-video-gif-14264780414888402835"
     ];
 
-    let gif = get_random_gif(&bite_gifs).unwrap_or("https://tenor.com/view/cat-bite-funny-chomp-gif-16986241");
+    let gif = random_choice(&bite_gifs).copied().unwrap_or("https://tenor.com/view/cat-bite-funny-chomp-gif-16986241");
     
     ctx.say(format!("{} bites {}", ctx.author().mention(), user.mention())).await?;
     ctx.say(gif).await?;

@@ -1,10 +1,10 @@
-use std::collections::HashMap;
-
 use crate::{Context, Error};
-use poise::serenity_prelude::{self as serenity, Color, User, OnlineStatus, Channel, ChannelType, ChannelId, GuildChannel};
+use poise::serenity_prelude::futures::future::join_all;
+use poise::serenity_prelude::{self as serenity, Color, User, OnlineStatus, ChannelType};
 use serenity::{CreateEmbed, CreateEmbedFooter};
 use crate::helpers::my_embeds::send_embed;
 use crate::helpers::datetime::pretty_date;
+use crate::helpers::misc::filter_channels_by_type;
 
 /// Information about the bot!
 #[poise::command(slash_command)]
@@ -12,8 +12,25 @@ pub async fn botinfo(ctx: Context<'_>) -> Result<(), Error> {
     let me = ctx.serenity_context().cache.current_user();
     let me_user = User::from(me);
 
-    // use this later probably
-    let _owners = &ctx.framework().options().owners;
+    // in the future improve the owners categorization and querying
+
+    let owner_futures: Vec<_> = ctx.framework()
+        .options() 
+        .owners
+        .iter()
+        .map(|owner_id| owner_id.to_user(ctx))
+        .collect();
+        
+    let owners: Vec<Result<User, serenity::prelude::SerenityError>> = join_all(owner_futures).await;
+
+    let owners_string: String = owners.into_iter()
+        .filter_map(Result::ok)
+        .map(|user| user.name)
+        .collect::<Vec<_>>()
+        .join(", ");
+
+
+
 
     let mut footer = CreateEmbedFooter::default();
     footer.text(format!("Creation date: {}", pretty_date(&me_user.created_at())));
@@ -23,7 +40,7 @@ pub async fn botinfo(ctx: Context<'_>) -> Result<(), Error> {
         .description("```Cat knows much, tells some. Cat knows many things others do not. Cat wishes you well.```")
         .color(Color::BLURPLE)
         .thumbnail(me_user.face())
-        .field("Created by:", "```bot owner```", true)
+        .field("Created by:", format!("```{}```", owners_string), true)
         .field("Developed by:", "```2 people```", true)
         .field("Tested by:", "```3 people```", true)
         .set_footer(footer);
@@ -79,16 +96,13 @@ pub async fn serverinfo(ctx: Context<'_>) -> Result<(), Error> {
 
 
 
-fn filter_channels_by_type(channels: &HashMap<ChannelId, Channel>, channel_type: ChannelType) -> Vec<&GuildChannel> {
-    channels
-        .iter()
-        .filter_map(|(_, channel)| {
-            if let Channel::Guild(guild_channel) = channel {
-                if guild_channel.kind == channel_type {
-                    return Some(guild_channel);
-                }
-            }
-            None
-        })
-        .collect()
+
+#[poise::command(slash_command, prefix_command)]
+pub async fn help(ctx: Context<'_>, command: Option<String>) -> Result<(), Error> {
+    let configuration = poise::builtins::HelpConfiguration {
+        // [configure aspects about the help message here]
+        ..Default::default()
+    };
+    poise::builtins::help(ctx, command.as_deref(), configuration).await?;
+    Ok(())
 }

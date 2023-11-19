@@ -46,6 +46,9 @@ type Context<'a> = poise::Context<'a, Data, Error>;
 // improve owners/devs/testers
 // help command
 
+// URGENT:
+// fix the self-referential mention in BITE command
+
 
 
 

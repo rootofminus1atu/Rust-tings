@@ -59,10 +59,8 @@ pub async fn event_handler(
 async fn send_papiez_msg(ctx: serenity::Context) {
     let now: DateTime<Utc> = Utc::now();
     let now_pl: DateTime<_>  = now.with_timezone(&Warsaw);
-    println!("Scheduled task running at: {}", now);
-    println!("Poland: {}", now_pl);
 
-    let message_content = "this is a periodic message";
+    let message_content = "2137";
 
     if now_pl.hour() == 21 {
         println!("REAL PAPIEZ 21");
@@ -94,9 +92,9 @@ async fn random_response(ctx: &serenity::Context, msg: &Message) -> Result<(), E
 
 async fn change_activity(ctx: serenity::Context) {
     let activities = vec![
-        Activity::watching("The thing"),
+        Activity::watching("dragons"),
         Activity::playing("With fire spells"),
-        Activity::watching("Skyrim"),
+        Activity::watching("over Skyrim"),
     ];
 
     let mut activity_cycle = activities.into_iter().cycle();
@@ -104,10 +102,8 @@ async fn change_activity(ctx: serenity::Context) {
 
     loop {
         if let Some(activity) = activity_cycle.next() {
-            println!("Changing activity to {:?}", activity);
             ctx.set_activity(activity).await;
         }
-        println!("Successfully changed activity!");
 
         timer.tick().await;
     }

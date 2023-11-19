@@ -93,7 +93,7 @@ async fn random_response(ctx: &serenity::Context, msg: &Message) -> Result<(), E
 async fn change_activity(ctx: serenity::Context) {
     let activities = vec![
         Activity::watching("dragons"),
-        Activity::playing("With fire spells"),
+        Activity::playing("with fire spells"),
         Activity::watching("over Skyrim"),
     ];
 

@@ -56,8 +56,8 @@ type Context<'a> = poise::Context<'a, Data, Error>;
 async fn poise(#[shuttle_secrets::Secrets] secret_store: SecretStore) -> ShuttlePoise<Data, Error> {
     // Get the discord token set in `Secrets.toml`
     let discord_token = secret_store
-        .get("DISCORD_TOKEN")
-        .context("'DISCORD_TOKEN' was not found")?;
+        .get("DISCORD_BOT_TOKEN")
+        .context("'DISCORD_BOT_TOKEN' was not found")?;
 
     let framework = poise::Framework::builder()
         .options(poise::FrameworkOptions {

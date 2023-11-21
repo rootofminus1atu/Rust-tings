@@ -23,6 +23,12 @@ use chrono_tz::Europe::Warsaw;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
+
+
+    Ok(())
+}
+
+async fn cron_test() -> Result<(), Box<dyn std::error::Error>> {
     let sched = JobScheduler::new().await?;
 
     sched.add(Job::new("0 37 * * * *", |_, _| {
@@ -51,6 +57,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("before sleep");
     tokio::time::sleep(core::time::Duration::from_secs(100)).await;
     println!("after sleep");
+
 
     Ok(())
 }

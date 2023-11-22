@@ -16,12 +16,14 @@ mod commands {
     pub mod randomizer;
     pub mod info;
     pub mod admin;
+    pub mod owner;
     pub mod events;
 }
 use commands::fun::{hello, oracle, kazakhstan, sashley, bite};
 use commands::randomizer::{fox, popequote};
 use commands::info::{botinfo, serverinfo, help};
-use commands::admin::{say, kill, test};
+use commands::admin::{say, kill};
+use commands::owner::{test, popequote_add, popequote_all, popequote_random};
 use commands::events::event_handler;
 
 use sqlx_postgres::{PgPool, PgPoolOptions};
@@ -39,17 +41,19 @@ type Context<'a> = poise::Context<'a, Data, Error>;
 // TODO:
 // palette
 // translator
-// 2137 notification
+// --- 2137 notification
 // automod
 // warns
-// add popequote
+// --- add popequote
 // ocs display
 // cleverbot chat
-// clairvoyance random message
-// change status every few minutes
+// --- clairvoyance random message
+// --- change status every few minutes
 // calculator maybe?
 // improve owners/devs/testers
 // help command
+// db for stuff like clairvoyance, responses, and more
+// paginate stuff like popequote
 
 // URGENT:
 // fix the self-referential mention in BITE command
@@ -74,12 +78,12 @@ async fn poise(#[shuttle_secrets::Secrets] secret_store: SecretStore) -> Shuttle
         .await
         .expect("Failed to connect to database");
 
-    /*
+    
     sqlx::migrate!()
         .run(&db)
         .await
         .expect("Unable to apply migrations!");
-    */
+    
 
     let data = Data { db };
 
@@ -101,7 +105,11 @@ async fn poise(#[shuttle_secrets::Secrets] secret_store: SecretStore) -> Shuttle
 
                 say(),
                 kill(),
-                test()
+                test(),
+
+                popequote_add(),
+                popequote_all(),
+                popequote_random()
                 ],
             event_handler: |_ctx, event, _framework, _data| {
                 Box::pin(event_handler(_ctx, event, _framework, _data))
@@ -122,7 +130,7 @@ async fn poise(#[shuttle_secrets::Secrets] secret_store: SecretStore) -> Shuttle
         .setup(|ctx, _ready, framework| {
             Box::pin(async move {
                 poise::builtins::register_globally(ctx, &framework.options().commands).await?;
-                Ok(data)
+                Ok(data) 
             })
         })
         .build()

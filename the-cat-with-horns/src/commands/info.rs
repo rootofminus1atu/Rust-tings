@@ -33,7 +33,7 @@ pub async fn botinfo(ctx: Context<'_>) -> Result<(), Error> {
 
 
     let mut footer = CreateEmbedFooter::default();
-    footer.text(format!("Creation date: {}", pretty_date(&me_user.created_at())));
+    footer.text(format!("Creation date: {}", pretty_date(&me_user.created_at().date_naive())));
 
     let mut embed = CreateEmbed::default();
     embed.title(format!("{}", me_user.name))
@@ -57,7 +57,7 @@ pub async fn serverinfo(ctx: Context<'_>) -> Result<(), Error> {
     let owner = g.owner_id.to_user(&ctx).await?;
 
     let mut footer = CreateEmbedFooter::default();
-    footer.text(format!("Creation date: {}", pretty_date(&g.id.created_at())));
+    footer.text(format!("Creation date: {}", pretty_date(&g.id.created_at().date_naive())));
 
     let mut embed = CreateEmbed::default();
     embed.title("Server information")

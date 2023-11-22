@@ -1,0 +1,4 @@
+-- CREATE TABLE IF NOT EXISTS server (
+--     id VARCHAR(255) PRIMARY KEY  -- WIP
+--     name VARCHAR(255)
+-- )

@@ -1,5 +1,4 @@
 use poise::serenity_prelude::GuildChannel;
-use sqlx;
 use crate::{Context, Error};
 
 /// I shall say what you command me to say
@@ -13,40 +12,6 @@ pub async fn say(
     channel: GuildChannel
 ) -> Result<(), Error> {
     channel.say(ctx, text).await?;
-
-    ctx.say("Message sent!").await?;
-
-    Ok(())
-}
-
-
-
-#[derive(Debug, sqlx::FromRow)]
-struct TestTableRow {
-    name: String,
-    // Add other fields as needed based on your table columns
-}
-
-
-/// I shall say what you command me to say
-#[poise::command(slash_command, required_permissions = "MANAGE_GUILD")]
-pub async fn test(ctx: Context<'_>) -> Result<(), Error> {
-
-
-
-    // Execute a simple query
-    let rows: Vec<TestTableRow> = sqlx::query_as("SELECT name FROM test_table")
-        .fetch_all(&ctx.data().db)
-        .await?;
-
-    // Process the results
-    for row in rows {
-        println!("Name: {}", row.name);
-        // Access other fields if present in the struct
-    }
-
-
-
 
     ctx.say("Message sent!").await?;
 

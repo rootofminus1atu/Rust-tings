@@ -1,4 +1,4 @@
-use crate::helpers::misc::random_choice;
+use crate::helpers::{misc::{random_choice, random_int, random_date}, datetime::pretty_date};
 use poise::{serenity_prelude::ChannelId, Event};
 use crate::{Error, Data};
 use poise::serenity_prelude as serenity;
@@ -22,6 +22,8 @@ pub async fn event_handler(
             println!("Logged in as {}", data_about_bot.user.name);
 
             tokio::spawn(change_activity(ctx.clone()));
+
+            tokio::spawn(clairvoyance(ctx.clone()));
             
 
             // scheduling 2137
@@ -34,15 +36,6 @@ pub async fn event_handler(
             })?).await?;
 
             sched.start().await?;
-
-
-            /*
-            tokio::spawn(say_hi_every_second());
-            println!("Repeating background task started");
-            
-            tokio::spawn(send_periodic_message(ctx.clone()));
-            println!("Repeating... another task")
-            */
         }
         Event::Message { new_message } => {
             // if bot mentioned
@@ -56,19 +49,49 @@ pub async fn event_handler(
 }
 
 
+async fn clairvoyance(ctx: serenity::Context) {
+    let prophecies = vec![
+        "The heat death of the universe",
+        "2006 HONDA CIVIC"
+    ];
+    
+    loop {
+        let channel_id = ChannelId::from(1031977836849922111); 
+
+        let start = Utc::now().naive_utc();
+        let years = 100;
+        let in_secs = years * 3600 * 24 * 365;
+        let end = start + Duration::from_secs(in_secs);
+
+        let date = random_date(start.date(), end.date());
+        let prophecy = random_choice(&prophecies).copied().unwrap_or("The heat death of the universe");
+        let msg = format!("{}, {}", pretty_date(&date), prophecy);
+
+        if let Err(why) = channel_id.say(ctx.http.clone(), msg).await {
+            eprintln!("Failed to send clairvoyance message: {:?}", why);
+        }
+
+        let hours = random_int(1, 15);
+        let in_secs = hours * 3600;
+        println!("Sleeping for {} hours", hours);
+        tokio::time::sleep(Duration::from_secs(in_secs as u64)).await;
+    }
+}
+
+
 async fn send_papiez_msg(ctx: serenity::Context) {
     let now: DateTime<Utc> = Utc::now();
     let now_pl: DateTime<_>  = now.with_timezone(&Warsaw);
 
-    let message_content = "2137";
+    let message = "2137";
 
     if now_pl.hour() == 21 {
         println!("REAL PAPIEZ 21");
 
-        let channel_id = ChannelId::from(1152319972320739502);
+        let channel_id = ChannelId::from(1031977836849922111);
         // send text msg in that channel
-        if let Err(err) = channel_id.say(ctx.http.clone(), message_content).await {
-            eprintln!("Failed to send periodic message: {:?}", err);
+        if let Err(why) = channel_id.say(ctx.http.clone(), message).await {
+            eprintln!("Failed to send 2137 message: {:?}", why);
         }
     }
 }
@@ -101,13 +124,15 @@ async fn change_activity(ctx: serenity::Context) {
     let mut timer = interval(Duration::from_secs(60));
 
     loop {
+        timer.tick().await;
+
         if let Some(activity) = activity_cycle.next() {
             ctx.set_activity(activity).await;
         }
-
-        timer.tick().await;
     }
 }
+
+
 
 // Define a function to send a message to the specified channel periodically
 /* 
@@ -118,13 +143,13 @@ async fn send_periodic_message(ctx: serenity::Context) {
     let mut timer = interval(Duration::from_secs(11));
 
     loop {
+        timer.tick().await;
+
         let message_content = "this is a periodic message";
 
         if let Err(err) = channel_id.say(ctx.http.clone(), message_content).await {
             eprintln!("Failed to send periodic message: {:?}", err);
         }
-
-        timer.tick().await;
     }
 }
 

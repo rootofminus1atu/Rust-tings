@@ -23,7 +23,7 @@ use commands::fun::{hello, oracle, kazakhstan, sashley, bite};
 use commands::randomizer::{fox, popequote};
 use commands::info::{botinfo, serverinfo, help};
 use commands::admin::{say, kill};
-use commands::owner::{test, popequote_add, popequote_all, popequote_random};
+use commands::owner::{paginate, popequote_add, popequote_all, popequote_random};
 use commands::events::event_handler;
 
 use sqlx_postgres::{PgPool, PgPoolOptions};
@@ -105,7 +105,7 @@ async fn poise(#[shuttle_secrets::Secrets] secret_store: SecretStore) -> Shuttle
 
                 say(),
                 kill(),
-                test(),
+                paginate(),
 
                 popequote_add(),
                 popequote_all(),

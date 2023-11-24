@@ -1,7 +1,4 @@
-use std::collections::HashMap;
-
 use chrono::{NaiveDate, Duration};
-use poise::serenity_prelude::{Channel, ChannelId, ChannelType, GuildChannel};
 use rand::seq::SliceRandom;
 use rand;
 use rand::Rng;
@@ -28,16 +25,26 @@ pub fn random_date(start: NaiveDate, end: NaiveDate) -> NaiveDate {
 }
 
 
-pub fn filter_channels_by_type(channels: &HashMap<ChannelId, Channel>, channel_type: ChannelType) -> Vec<&GuildChannel> {
-    channels
-        .iter()
-        .filter_map(|(_, channel)| {
-            if let Channel::Guild(guild_channel) = channel {
-                if guild_channel.kind == channel_type {
-                    return Some(guild_channel);
-                }
-            }
-            None
-        })
-        .collect()
+
+pub fn divide_with_strlen(list: Vec<String>, str_limit: i32) -> Vec<Vec<String>> {
+    let mut result = Vec::new();
+    let mut current_page = Vec::new();
+    let mut current_length = 0;
+
+    for item in list {
+        let item_length = item.len() as i32;
+        if current_length + item_length > str_limit {
+            result.push(std::mem::take(&mut current_page));
+            current_length = 0;
+        }
+
+        current_page.push(item);
+        current_length += item_length;
+    }
+
+    if !current_page.is_empty() {
+        result.push(current_page);
+    }
+
+    result
 }

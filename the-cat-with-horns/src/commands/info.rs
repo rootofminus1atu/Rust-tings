@@ -2,9 +2,9 @@ use crate::{Context, Error};
 use poise::serenity_prelude::futures::future::join_all;
 use poise::serenity_prelude::{self as serenity, Color, User, OnlineStatus, ChannelType};
 use serenity::{CreateEmbed, CreateEmbedFooter};
-use crate::helpers::my_embeds::send_embed;
+use crate::helpers::discord::send_embed;
 use crate::helpers::datetime::pretty_date;
-use crate::helpers::misc::filter_channels_by_type;
+use crate::helpers::discord::filter_channels_by_type;
 
 /// Information about the bot!
 #[poise::command(slash_command)]

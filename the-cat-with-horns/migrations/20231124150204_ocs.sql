@@ -1,0 +1,10 @@
+CREATE TABLE IF NOT EXISTS oc (
+    id SERIAL PRIMARY KEY NOT NULL,
+    name VARCHAR(255) NOT NULL,
+    emoji VARCHAR(255) NOT NULL,
+    short_desc VARCHAR(255) NOT NULL,
+    long_desc VARCHAR NOT NULL,
+    created_by VARCHAR(255) NOT NULL,
+    created_on VARCHAR(255) NOT NULL,
+    image VARCHAR NOT NULL
+)

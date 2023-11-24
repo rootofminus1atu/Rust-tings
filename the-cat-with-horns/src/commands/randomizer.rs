@@ -2,7 +2,7 @@ use crate::{Context, Error};
 use poise::serenity_prelude::{self as serenity, Color};
 use serenity::{CreateEmbed, CreateEmbedAuthor};
 use crate::helpers::popequotestruct::PopeQuote;
-use crate::helpers::my_embeds::send_embed;
+use crate::helpers::discord::send_embed;
 
 async fn fetch_animal_img(url: &str, field_name: &str) -> Result<String, Error> {
     let img: String = reqwest::get(url)

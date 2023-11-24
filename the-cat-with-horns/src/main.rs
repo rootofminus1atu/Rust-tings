@@ -6,7 +6,7 @@ use shuttle_secrets::SecretStore;
 
 mod helpers {
     pub mod popequotestruct;
-    pub mod my_embeds;
+    pub mod discord;
     pub mod datetime;
     pub mod misc;
 }
@@ -23,7 +23,7 @@ use commands::fun::{hello, oracle, kazakhstan, sashley, bite};
 use commands::randomizer::{fox, popequote};
 use commands::info::{botinfo, serverinfo, help};
 use commands::admin::{say, kill};
-use commands::owner::{paginate, popequote_add, popequote_all, popequote_random};
+use commands::owner::{paginate, popequote_add, popequote_all, popequote_random, oc_add, character};
 use commands::events::event_handler;
 
 use sqlx_postgres::{PgPool, PgPoolOptions};
@@ -53,7 +53,7 @@ type Context<'a> = poise::Context<'a, Data, Error>;
 // improve owners/devs/testers
 // help command
 // db for stuff like clairvoyance, responses, and more
-// paginate stuff like popequote
+// --- paginate stuff like popequote
 
 // URGENT:
 // fix the self-referential mention in BITE command
@@ -109,7 +109,9 @@ async fn poise(#[shuttle_secrets::Secrets] secret_store: SecretStore) -> Shuttle
 
                 popequote_add(),
                 popequote_all(),
-                popequote_random()
+                popequote_random(),
+                oc_add(),
+                character()
                 ],
             event_handler: |_ctx, event, _framework, _data| {
                 Box::pin(event_handler(_ctx, event, _framework, _data))

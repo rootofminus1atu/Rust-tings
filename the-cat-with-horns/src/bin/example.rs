@@ -1,12 +1,13 @@
 #![allow(dead_code)]
 
-use poise::serenity_prelude::Timestamp;
+use poise::serenity_prelude::{Timestamp, Color};
 use reqwest;
+use sqlx_core::query_as::query_as;
+use sqlx_postgres::PgPool;
 use tokio;
 use ordinal::Ordinal;
 use rand::prelude::*;
 use tokio_postgres::NoTls;
-
 use sqlx::postgres::PgPoolOptions;
 
 #[derive(Debug, sqlx::FromRow)]
@@ -20,12 +21,119 @@ use tokio_cron_scheduler::{Job, JobScheduler};
 use chrono::{DateTime, Utc, Timelike};
 use chrono_tz::Europe::Warsaw;
 
+#[derive(Debug, sqlx::FromRow)]
+struct Oc {
+    id: i32,
+    name: String,
+    emoji: String,
+    short_desc: String,
+    long_desc: String,
+    created_by: String,
+    created_on: String,
+    image: String
+}
+
+impl Oc {
+    pub fn new(name: String, emoji: String, short_desc: String, long_desc: String, created_by: String, created_on: String, image: String) -> Self {
+        Oc { id: 0, name, emoji, short_desc, long_desc, created_by, created_on, image }
+    }
+
+    pub async fn insert_one(pool: &PgPool, oc: Self) -> Result<Self, sqlx::Error> {
+        let result = query_as::<_, Oc>(
+            "INSERT INTO oc (name, emoji, short_desc, long_desc, created_by, created_on, image)
+            VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *"
+            )
+            .bind(oc.name)
+            .bind(oc.emoji)
+            .bind(oc.short_desc)
+            .bind(oc.long_desc)
+            .bind(oc.created_by)
+            .bind(oc.created_on)
+            .bind(oc.image)
+            .fetch_one(pool)
+            .await?;
+
+        Ok(result)
+    }
+}
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 
+    
+    Ok(())
+}
+
+fn hex_color_test() -> Result<(), Box<dyn std::error::Error>> {
+    let hex_string = "0x123abc";
+
+    println!("{:?}", color_from_hex_str(hex_string).unwrap().hex());
 
     Ok(())
+}
+
+use regex::Regex;
+
+fn is_valid_hex_color(input: &str) -> bool {
+    let hex_color_regex = Regex::new(r#"((0x)|(#))?[\dA-Fa-f]{6}"#).unwrap();
+    hex_color_regex.is_match(input)
+}
+
+fn color_from_hex_str(input: &str) -> Result<Color, Box<dyn std::error::Error>> {
+    if !is_valid_hex_color(input) {
+        "how tf do I return a ParseIntError saying that a hex value was incorrect, well it was incorrect so please check your hex value".parse::<u32>()?;
+    }
+
+    let trimmed_input = input.trim_start_matches(|c| c == '#' || c == '0').trim_start_matches("x");
+
+    let color = u32::from_str_radix(trimmed_input, 16)
+        .map(|hex_value| Color::from(hex_value))?;
+
+    Ok(color)
+}
+
+fn pagination_test() -> Result<(), Box<dyn std::error::Error>> {
+    let input_list = [
+        "apples",
+        "oranges and",
+        "Content of third page",
+        "dates",
+    ];    
+    let str_limit = 20;
+
+    let result = divide_with_strlen(&input_list, str_limit);
+
+    for (i, page) in result.iter().enumerate() {
+        println!("Page {}: {:?}", i + 1, page);
+    }
+
+    Ok(())
+}
+
+
+fn divide_with_strlen<'a>(list: &'a [&'a str], str_limit: i32) -> Vec<Vec<&'a str>> {
+    // Implementation goes here
+    // You can use tokio::task::spawn or tokio::task::spawn_blocking for parallelism if needed
+    let mut result = Vec::new();
+    let mut current_page = Vec::new();
+    let mut current_length = 0;
+
+    for &item in list {
+        let item_length = item.len() as i32;
+        if current_length + item_length > str_limit {
+            result.push(std::mem::take(&mut current_page));
+            current_length = 0;
+        }
+
+        current_page.push(item);
+        current_length += item_length;
+    }
+
+    if !current_page.is_empty() {
+        result.push(current_page);
+    }
+
+    result
 }
 
 async fn cron_test() -> Result<(), Box<dyn std::error::Error>> {

@@ -11,6 +11,7 @@ mod helpers {
     pub mod misc;
 }
 
+
 mod commands {
     pub mod fun;
     pub mod randomizer;
@@ -18,13 +19,20 @@ mod commands {
     pub mod admin;
     pub mod owner;
     pub mod events;
+    pub mod db_access {
+        pub mod general;
+        pub mod oc;
+        pub mod popequote;
+    }
 }
 use commands::fun::{hello, oracle, kazakhstan, sashley, bite};
 use commands::randomizer::{fox, popequote};
-use commands::info::{botinfo, serverinfo, help};
-use commands::admin::{say, kill};
-use commands::owner::{paginate, popequote_add, popequote_all, popequote_random, oc_add, character};
+use commands::info::{botinfo, serverinfo, help, character};
+use commands::admin::say;
+use commands::owner::{paginate, kill};
 use commands::events::event_handler;
+
+use commands::db_access;
 
 use sqlx_postgres::{PgPool, PgPoolOptions};
 
@@ -102,16 +110,13 @@ async fn poise(#[shuttle_secrets::Secrets] secret_store: SecretStore) -> Shuttle
                 botinfo(),
                 serverinfo(),
                 help(),
+                character(),
 
                 say(),
                 kill(),
                 paginate(),
 
-                popequote_add(),
-                popequote_all(),
-                popequote_random(),
-                oc_add(),
-                character()
+                db_access::general::owner(),
                 ],
             event_handler: |_ctx, event, _framework, _data| {
                 Box::pin(event_handler(_ctx, event, _framework, _data))

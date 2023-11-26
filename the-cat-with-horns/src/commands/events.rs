@@ -16,25 +16,32 @@ pub async fn event_handler(
     _framework: poise::FrameworkContext<'_, Data, Error>,
     _data: &Data,
 ) -> Result<(), Error> {
+
     match event {
         
         Event::Ready { data_about_bot } => {
             println!("Logged in as {}", data_about_bot.user.name);
 
+            println!("Spawning change_activity");
             tokio::spawn(change_activity(ctx.clone()));
 
+            println!("Spawning clairvoyance");
             tokio::spawn(clairvoyance(ctx.clone()));
             
 
             // scheduling 2137
+            println!("Creating a new scheduler");
             let sched = JobScheduler::new().await?;
 
+            println!("creating job_ctx");
             let job_ctx = ctx.clone();
 
+            println!("Adding to schedule");
             sched.add(Job::new("5 37 * * * *", move |_, _| {
                 tokio::task::spawn(send_papiez_msg(job_ctx.clone()));
             })?).await?;
 
+            println!("Starting schedule");
             sched.start().await?;
         }
         Event::Message { new_message } => {
@@ -71,7 +78,7 @@ async fn clairvoyance(ctx: serenity::Context) {
             eprintln!("Failed to send clairvoyance message: {:?}", why);
         }
 
-        let hours = random_int(1, 15);
+        let hours = random_int(1, 3);
         let in_secs = hours * 3600;
         println!("Sleeping for {} hours", hours);
         tokio::time::sleep(Duration::from_secs(in_secs as u64)).await;
@@ -84,15 +91,20 @@ async fn send_papiez_msg(ctx: serenity::Context) {
     let now_pl: DateTime<_>  = now.with_timezone(&Warsaw);
 
     let message = "2137";
+    println!("fake papiez 21");
 
-    if now_pl.hour() == 21 {
+    if now_pl.hour() == 4 {
         println!("REAL PAPIEZ 21");
 
         let channel_id = ChannelId::from(1031977836849922111);
         // send text msg in that channel
-        if let Err(why) = channel_id.say(ctx.http.clone(), message).await {
-            eprintln!("Failed to send 2137 message: {:?}", why);
-        }
+
+        let res = channel_id.say(&ctx.http, message).await;
+        println!("the {:?}", res);
+
+        // if let Err(why) =  {
+        //     eprintln!("Failed to send 2137 message: {:?}", why);
+        // }
     }
 }
 

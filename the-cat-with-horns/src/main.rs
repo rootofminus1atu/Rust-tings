@@ -53,7 +53,7 @@ type Context<'a> = poise::Context<'a, Data, Error>;
 // automod
 // warns
 // --- add popequote
-// ocs display
+// --- ocs display
 // cleverbot chat
 // --- clairvoyance random message
 // --- change status every few minutes
@@ -64,7 +64,7 @@ type Context<'a> = poise::Context<'a, Data, Error>;
 // --- paginate stuff like popequote
 
 // URGENT:
-// fix the self-referential mention in BITE command
+// fix the timed events
 
 
 

@@ -1,6 +1,6 @@
 use anyhow::Context as _;
 
-use poise::serenity_prelude as serenity;
+use poise::serenity_prelude::{self as serenity, GatewayIntents, Client, ChannelId};
 use shuttle_poise::ShuttlePoise;
 use shuttle_secrets::SecretStore;
 
@@ -35,6 +35,7 @@ use commands::events::event_handler;
 use commands::db_access;
 
 use sqlx_postgres::{PgPool, PgPoolOptions};
+use tokio_schedule::every;
 
 
 // User data, which is stored and accessible in all command invocations
@@ -65,8 +66,10 @@ type Context<'a> = poise::Context<'a, Data, Error>;
 
 // URGENT:
 // fix the timed events
+// REPLACE CRON SCHEDULING WITH TOKIO INTERVAL_AT - that or remember to restart the project env each time
 
-
+use chrono::{DateTime, Utc, Timelike};
+use tokio_schedule::Job;
 
 
 #[shuttle_runtime::main]
@@ -75,6 +78,7 @@ async fn poise(#[shuttle_secrets::Secrets] secret_store: SecretStore) -> Shuttle
     let discord_token = secret_store
         .get("DISCORD_BOT_TOKEN")
         .context("'DISCORD_BOT_TOKEN' was not found")?;
+
 
     let database_url = secret_store
         .get("DATABASE_URL")

@@ -17,50 +17,137 @@ struct User {
     created_at: chrono::DateTime<chrono::Utc>,
 }
 
-use tokio_cron_scheduler::{Job, JobScheduler};
-use chrono::{DateTime, Utc, Timelike};
+use tokio_cron_scheduler::{JobScheduler};
+use chrono::{DateTime, Utc, Timelike, Duration};
 use chrono_tz::Europe::Warsaw;
+// use tokio_schedule::{every, Job};
 
-#[derive(Debug, sqlx::FromRow)]
-struct Oc {
-    id: i32,
-    name: String,
-    emoji: String,
-    short_desc: String,
-    long_desc: String,
-    created_by: String,
-    created_on: String,
-    image: String
-}
+use chrono::prelude::{NaiveDate, NaiveDateTime};
 
-impl Oc {
-    pub fn new(name: String, emoji: String, short_desc: String, long_desc: String, created_by: String, created_on: String, image: String) -> Self {
-        Oc { id: 0, name, emoji, short_desc, long_desc, created_by, created_on, image }
-    }
+use tokio_cron::{Scheduler, Job};
 
-    pub async fn insert_one(pool: &PgPool, oc: Self) -> Result<Self, sqlx::Error> {
-        let result = query_as::<_, Oc>(
-            "INSERT INTO oc (name, emoji, short_desc, long_desc, created_by, created_on, image)
-            VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *"
-            )
-            .bind(oc.name)
-            .bind(oc.emoji)
-            .bind(oc.short_desc)
-            .bind(oc.long_desc)
-            .bind(oc.created_by)
-            .bind(oc.created_on)
-            .bind(oc.image)
-            .fetch_one(pool)
-            .await?;
-
-        Ok(result)
-    }
-}
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
+    let mut scheduler = Scheduler::utc();
 
+    let h = "hi".to_string();
+
+    // scheduler.add(Job::new("*/1 * * * * *", simple_async_fn));
+    scheduler.add(Job::new("*/5 24 * * * *", move || {
+        async_fn_with_args(h.clone())
+    }));
+
+    loop {
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+        println!("{}", chrono::Utc::now());
+    }
+
+    Ok(())
+}
+
+async fn simple_async_fn() {
+    println!("{} Hello, world!", chrono::Utc::now());
+}
+
+async fn async_fn_with_args(name: String) {
+    println!("{} Hello, world! {}", chrono::Utc::now(), name);
+}
+
+
+
+async fn tokio_schedule_test_not_working() -> Result<(), Box<dyn std::error::Error>> {
+    /* 
+    let x = "idk".to_string();
+
+    my_perform(|| async { say_thing(x.clone()).await });
+
+
+    let every_day = every(1).day()
+        .at(16, 05, 00)
+        .in_timezone(&Utc)
+        .perform(|| async { 
+            say_thing(x.clone()).await 
+        }); // how
+
+    tokio::spawn(every_day);
     
+
+    loop {
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+        println!("{}", chrono::Utc::now());
+    }
+
+    */
+    
+    Ok(())
+}
+
+
+
+fn old_cron_scheduler_rest() -> Result<(), Box<dyn std::error::Error>> {
+                /* 
+            // scheduling 2137
+            println!("Creating a new scheduler");
+            let mut sched = JobScheduler::new().await?;
+            // THIS THING UNCOMMENT LATER sched.shutdown().await?;
+
+            println!("creating job_ctx");
+            let job_ctx = ctx.clone();
+
+            println!("Adding to schedule");
+            sched.add(Job::new("5 37 * * * *", move |_, _| {
+                tokio::task::spawn(send_papiez_msg(job_ctx.clone()));
+            })?).await?;
+
+            println!("Starting schedule");
+            sched.start().await?;
+            */
+    
+    Ok(())
+}
+
+/// working but won't work in the bot... stupid move
+async fn tokio_schedule_test() -> Result<(), Box<dyn std::error::Error>> {
+    /* 
+    let every_day = every(1).day().at(16, 05, 00)
+        .in_timezone(&Utc).perform(|| async { println!("I'm scheduled!") });
+    tokio::spawn(every_day);
+    
+
+    loop {
+        tokio::time::sleep(std::time::Duration::from_secs(1)).await;
+        println!("{}", chrono::Utc::now());
+    }*/
+
+    Ok(())
+}
+
+
+fn tokio_interval_test() -> Result<(), Box<dyn std::error::Error>> {
+
+    /*
+    let now = chrono::Utc::now().naive_utc();
+    let desired_time = now.date().and_hms_opt(21, 37, 0).unwrap();
+
+    // start with a safe check for overtime
+    let start = if now > desired_time {
+        let tomorrow = now + Duration::days(1);
+        tomorrow.date().and_hms_opt(21, 37, 0).unwrap() 
+    } else {
+        desired_time
+    };
+
+
+    let period = chrono::Duration::days(1).to_std().unwrap();
+
+    let mut interval = tokio::time::interval_at(tokio::time::Instant::now() + start, period);
+
+    loop {
+        interval.tick().await;
+    }
+     */
+
     Ok(())
 }
 
@@ -139,7 +226,7 @@ fn divide_with_strlen<'a>(list: &'a [&'a str], str_limit: i32) -> Vec<Vec<&'a st
 async fn cron_test() -> Result<(), Box<dyn std::error::Error>> {
     let sched = JobScheduler::new().await?;
 
-    sched.add(Job::new("0 37 * * * *", |_, _| {
+    sched.add(tokio_cron_scheduler::Job::new("0 37 * * * *", |_, _| {
         let now: DateTime<Utc> = Utc::now();
         let now_pl: DateTime<_>  = now.with_timezone(&Warsaw);
         println!("Scheduled task running at: {}", now);

@@ -1,14 +1,18 @@
 use crate::helpers::{misc::{random_choice, random_int, random_date}, datetime::pretty_date};
-use poise::{serenity_prelude::ChannelId, Event};
+use poise::{serenity_prelude::{ChannelId, Client, GatewayIntents}, Event};
+use tracing::debug;
 use crate::{Error, Data};
 use poise::serenity_prelude as serenity;
 use serenity::model::channel::Message;
 use serenity::model::gateway::Activity;
 use tokio::time::interval;
-use std::time::Duration;
-use tokio_cron_scheduler::{Job, JobScheduler};
+use std::{time::Duration, sync::Arc};
 use chrono::{DateTime, Utc, Timelike};
 use chrono_tz::Europe::Warsaw;
+use tokio_cron::{Scheduler, Job};
+
+
+
 
 pub async fn event_handler(
     ctx: &serenity::Context,
@@ -29,20 +33,33 @@ pub async fn event_handler(
             tokio::spawn(clairvoyance(ctx.clone()));
             
 
-            // scheduling 2137
-            println!("Creating a new scheduler");
-            let sched = JobScheduler::new().await?;
+            let mut scheduler = Scheduler::utc();
 
-            println!("creating job_ctx");
-            let job_ctx = ctx.clone();
+            let h = "hi".to_string();
 
-            println!("Adding to schedule");
-            sched.add(Job::new("5 37 * * * *", move |_, _| {
-                tokio::task::spawn(send_papiez_msg(job_ctx.clone()));
-            })?).await?;
+            // scheduler.add(Job::new("*/1 * * * * *", simple_async_fn));
+            let ctx_clone = ctx.clone();
+            scheduler.add(Job::new("*/2 24 * * * *", move || {
+                send_papiez_msg(ctx_clone.clone())  // fucking double clone
+            }));
 
-            println!("Starting schedule");
-            sched.start().await?;
+
+            /* 
+            let handlerrr = || async {
+                let _cloned = ctx.http.clone();
+                println!("hi");
+            };
+
+            // I WISH THIS WORKED
+            
+            let every_day = every(1).day()
+                .at(16, 25, 00)
+                .in_timezone(&Utc)
+                .perform(handlerrr);
+        
+            tokio::spawn(every_day);
+            */
+
         }
         Event::Message { new_message } => {
             // if bot mentioned
@@ -173,3 +190,111 @@ async fn say_hi_every_second() {
         timer.tick().await;
     }
 }*/
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

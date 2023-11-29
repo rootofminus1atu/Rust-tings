@@ -35,7 +35,7 @@ pub async fn event_handler(
             let mut scheduler = Scheduler::new_in_timezone(Warsaw);
 
             let ctx_clone = ctx.clone();
-            scheduler.add(Job::named("5 sec", "*/10 37 21 * * *", move || {
+            scheduler.add(Job::named("5 sec", "*/20 37 * * * *", move || {
                 send_papiez_msg(ctx_clone.clone())  // fucking double clone
             }));
         }

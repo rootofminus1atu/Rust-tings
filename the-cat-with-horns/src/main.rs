@@ -59,10 +59,11 @@ type Context<'a> = poise::Context<'a, Data, Error>;
 // --- change status every few minutes
 // calculator maybe?
 // improve owners/devs/testers
-// help command
+// -- help command
 // db for stuff like clairvoyance, responses, and more
 // --- paginate stuff like popequote
 // reorder commands into folders each for a category
+// abstract away the select menu + embeds display
 
 // URGENT:
 // --- fix the timed events

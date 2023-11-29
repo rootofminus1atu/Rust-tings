@@ -1,7 +1,7 @@
 use crate::{Context, Data, Error};
 use poise::Command;
 use poise::serenity_prelude::futures::future::join_all;
-use poise::serenity_prelude::{self as serenity, Color, User, OnlineStatus, ChannelType, CollectComponentInteraction, InteractionResponseType, CreateSelectMenu, CreateEmbedAuthor, ReactionType, CreateSelectMenuOption, CreateSelectMenuOptions};
+use poise::serenity_prelude::{self as serenity, Color, User, OnlineStatus, ChannelType, CollectComponentInteraction, InteractionResponseType, CreateSelectMenu, CreateEmbedAuthor, ReactionType, CreateSelectMenuOption};
 use serenity::{CreateEmbed, CreateEmbedFooter};
 use crate::helpers::discord::{send_embed, color_from_hex_str};
 use crate::helpers::datetime::pretty_date;
@@ -9,7 +9,6 @@ use crate::helpers::discord::filter_channels_by_type;
 use crate::commands::db_access::oc::Oc;
 
 
-const DEFAULT: &str = "Other";
 
 #[derive(Debug)]
 struct CmdCategory<'a> {
@@ -119,6 +118,7 @@ pub async fn help(ctx: Context<'_>) -> Result<(), Error> {
         }).embed(|e| {
             e.title("Help menu")
                 .description("Get help!")
+                .color(Color::BLURPLE)
         })
     })
     .await?;
@@ -137,14 +137,29 @@ pub async fn help(ctx: Context<'_>) -> Result<(), Error> {
                     d.embed(|e| {
                         let cat_name = choice.data.values[0].clone();
 
-                        let cat = all_categories.iter()
-                            .find(|c| c.name == cat_name).unwrap(); 
+                        let (index, cat) = all_categories.iter()
+                            .enumerate()
+                            .find(|(_, c)| c.name == cat_name)
+                            .unwrap(); 
 
-                        e.title(&cat.name)
+                        e.title(format!("{}. {}", index + 1, &cat.name))
                             .description(&cat.description)
                             .fields(cat.commands.iter()
+                                .filter(|com| 
+                                    !com.hide_in_help &&
+                                    (com.prefix_action.is_some() ||
+                                    com.slash_action.is_some())
+                                )
                                 .map(|com| {
-                                    return (com.name.clone(), com.description.clone().unwrap_or("".into()), false) 
+                                    let com_pars_str = com.parameters.iter()
+                                        .map(|par| format!("[{}]", par.name))
+                                        .collect::<Vec<_>>()
+                                        .join(" ");
+
+                                    let title = format!("/{} {}", com.name, com_pars_str);
+                                    let desc = com.description.clone().unwrap_or("".into());
+
+                                    return (title, desc, false) 
                                 })
                             )
                             .color(Color::BLURPLE)

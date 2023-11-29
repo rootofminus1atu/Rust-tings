@@ -18,7 +18,7 @@ async fn fetch_animal_img(url: &str, field_name: &str) -> Result<String, Error> 
 }
 
 /// Get a random fluffy fox!
-#[poise::command(slash_command)]
+#[poise::command(slash_command, category = "Randomizer")]
 pub async fn fox(ctx: Context<'_>) -> Result<(), Error> {
     let url = "https://randomfox.ca/floof";
     let img = fetch_animal_img(url, "image").await?;
@@ -34,7 +34,7 @@ pub async fn fox(ctx: Context<'_>) -> Result<(), Error> {
 }
 
 /// Pope John Paul the 2nd's wisdom
-#[poise::command(slash_command, prefix_command)]
+#[poise::command(slash_command, prefix_command, category = "Randomizer")]
 pub async fn popequote(ctx: Context<'_>) -> Result<(), Error> {
     let q = PopeQuote::get_random_quote().ok_or("No quote found somehow...")?;
 

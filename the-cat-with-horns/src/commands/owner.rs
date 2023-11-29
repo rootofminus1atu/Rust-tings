@@ -18,7 +18,7 @@ pub async fn kill(ctx: Context<'_>) -> Result<(), Error> {
 }
 
 
-#[poise::command(slash_command, prefix_command)]
+#[poise::command(slash_command, prefix_command, hide_in_help)]
 pub async fn paginate(ctx: Context<'_>) -> Result<(), Error> {
     let pages = [
         "apples",

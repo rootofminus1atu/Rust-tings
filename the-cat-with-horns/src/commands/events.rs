@@ -1,13 +1,12 @@
 use crate::helpers::{misc::{random_choice, random_int, random_date}, datetime::pretty_date};
-use poise::{serenity_prelude::{ChannelId, Client, GatewayIntents}, Event};
-use tracing::debug;
+use poise::{serenity_prelude::ChannelId, Event};
 use crate::{Error, Data};
 use poise::serenity_prelude as serenity;
 use serenity::model::channel::Message;
 use serenity::model::gateway::Activity;
 use tokio::time::interval;
-use std::{time::Duration, sync::Arc};
-use chrono::{DateTime, Utc, Timelike};
+use std::time::Duration;
+use chrono::Utc;
 use chrono_tz::Europe::Warsaw;
 use tokio_cron::{Scheduler, Job};
 
@@ -26,40 +25,19 @@ pub async fn event_handler(
         Event::Ready { data_about_bot } => {
             println!("Logged in as {}", data_about_bot.user.name);
 
-            println!("Spawning change_activity");
+
             tokio::spawn(change_activity(ctx.clone()));
 
-            println!("Spawning clairvoyance");
             tokio::spawn(clairvoyance(ctx.clone()));
             
 
-            let mut scheduler = Scheduler::utc();
+            // the scheduled papiez msg for 21:37
+            let mut scheduler = Scheduler::new_in_timezone(Warsaw);
 
-            let h = "hi".to_string();
-
-            // scheduler.add(Job::new("*/1 * * * * *", simple_async_fn));
             let ctx_clone = ctx.clone();
-            scheduler.add(Job::new("*/2 24 * * * *", move || {
+            scheduler.add(Job::named("5 sec", "*/10 37 21 * * *", move || {
                 send_papiez_msg(ctx_clone.clone())  // fucking double clone
             }));
-
-
-            /* 
-            let handlerrr = || async {
-                let _cloned = ctx.http.clone();
-                println!("hi");
-            };
-
-            // I WISH THIS WORKED
-            
-            let every_day = every(1).day()
-                .at(16, 25, 00)
-                .in_timezone(&Utc)
-                .perform(handlerrr);
-        
-            tokio::spawn(every_day);
-            */
-
         }
         Event::Message { new_message } => {
             // if bot mentioned
@@ -104,6 +82,23 @@ async fn clairvoyance(ctx: serenity::Context) {
 
 
 async fn send_papiez_msg(ctx: serenity::Context) {
+
+
+    let message = "2137";
+
+    let channel_id = ChannelId::from(1031977836849922111);
+
+
+    if let Err(why) = channel_id.say(&ctx.http, message).await {
+        eprintln!("Failed to send 2137 message: {:?}", why);
+    }
+
+}
+
+/*
+async fn old_send_papiez_msg(ctx: serenity::Context) {
+
+
     let now: DateTime<Utc> = Utc::now();
     let now_pl: DateTime<_>  = now.with_timezone(&Warsaw);
 
@@ -124,8 +119,7 @@ async fn send_papiez_msg(ctx: serenity::Context) {
         // }
     }
 }
-
-
+*/
 
 
 async fn random_response(ctx: &serenity::Context, msg: &Message) -> Result<(), Error> {

@@ -2,7 +2,7 @@ use poise::serenity_prelude::GuildChannel;
 use crate::{Context, Error};
 
 /// I shall say what you command me to say
-#[poise::command(slash_command, ephemeral, required_permissions = "MANAGE_GUILD")]
+#[poise::command(slash_command, ephemeral, required_permissions = "MANAGE_GUILD", category = "Admin")]
 pub async fn say(
     ctx: Context<'_>,
     #[description = "What I'll say"]

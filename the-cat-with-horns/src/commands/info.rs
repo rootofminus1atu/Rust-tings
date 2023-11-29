@@ -1,14 +1,171 @@
-use crate::{Context, Error};
+use crate::{Context, Data, Error};
+use poise::Command;
 use poise::serenity_prelude::futures::future::join_all;
-use poise::serenity_prelude::{self as serenity, Color, User, OnlineStatus, ChannelType, CollectComponentInteraction, InteractionResponseType, CreateSelectMenu, CreateEmbedAuthor, ReactionType, CreateSelectMenuOption};
+use poise::serenity_prelude::{self as serenity, Color, User, OnlineStatus, ChannelType, CollectComponentInteraction, InteractionResponseType, CreateSelectMenu, CreateEmbedAuthor, ReactionType, CreateSelectMenuOption, CreateSelectMenuOptions};
 use serenity::{CreateEmbed, CreateEmbedFooter};
 use crate::helpers::discord::{send_embed, color_from_hex_str};
 use crate::helpers::datetime::pretty_date;
 use crate::helpers::discord::filter_channels_by_type;
 use crate::commands::db_access::oc::Oc;
 
+
+const DEFAULT: &str = "Other";
+
+#[derive(Debug)]
+struct CmdCategory<'a> {
+    pub name: String,
+    pub emoji: String,
+    pub description: String,
+    pub commands: Vec<&'a Command<Data, Error>>,
+}
+
+impl<'a> CmdCategory<'a> {
+    pub fn from(name: &str, emoji: &str, description: &str) -> Self {
+        Self {
+            name: name.to_string(),
+            emoji: emoji.to_string(),
+            description: description.to_string(),
+            commands: vec![],
+        }
+    }
+}
+
+#[derive(Debug)]
+struct CmdCategoryCollection<'a> {
+    pub categories: Vec<CmdCategory<'a>>,
+    pub default: CmdCategory<'a>,
+}
+
+impl<'a> CmdCategoryCollection<'a> {
+    pub fn default(default: CmdCategory<'a>) -> Self {
+        Self {
+            categories: vec![],
+            default,
+        }
+    }
+
+    pub fn add_categories(mut self, command_categories: Vec<CmdCategory<'a>>) -> Self {
+        self.categories.extend(command_categories);
+        self
+    }
+
+    pub fn fall_in(mut self, commands: &'a [Command<Data, Error>]) -> Self {
+        for cmd in commands {
+            let found = self.categories.iter_mut().find(|c| {
+                cmd.category.is_some_and(|category_name| category_name == &c.name)
+            });
+
+            match found {
+                Some(cmd_category) => cmd_category.commands.push(cmd),
+                None => self.default.commands.push(cmd),
+            }
+        }
+        self
+    }
+
+    pub fn all(&self) -> Vec<&CmdCategory<'a>> {
+        let mut all_categories: Vec<&CmdCategory<'a>> = self.categories.iter().collect();
+        all_categories.push(&self.default);
+        all_categories
+    }
+}
+
+
+
+/// Help me!
+#[poise::command(prefix_command, slash_command)]
+pub async fn help(ctx: Context<'_>) -> Result<(), Error> {
+    let categories = CmdCategoryCollection::default(
+        CmdCategory::from("Default", "🤓", "Everything that doesn't belong to any categories")
+        )
+        .add_categories(vec![
+            CmdCategory::from("Admin", "🤓", "Fat discord mods"),
+            CmdCategory::from("Fun", "🥳", "All commands that are for fun"),
+            ])
+        .fall_in(&ctx.framework().options().commands);
+
+    let all_categories = categories.all();
+
+    let ctx_id = ctx.id();
+    let menu_id = format!("{}menu", ctx_id);
+
+
+    let ops = all_categories.iter()
+        .map(|cat| {
+            let mut help_section = CreateSelectMenuOption::default();
+
+            help_section.value(&cat.name)
+                .label(&cat.name)
+                .description(&cat.description)
+                .emoji(cat.emoji.clone().parse::<ReactionType>().unwrap());
+
+            help_section
+        })
+        .collect::<Vec<_>>();
+
+    let mut menu = CreateSelectMenu::default();
+    menu.custom_id(&menu_id)
+        .options(|o| o.set_options(ops))
+        .placeholder("Select a help section");
+
+    ctx.send(|m| {
+        m.components(|c| {
+            c.create_action_row(|a| {
+                a.create_select_menu(|s| {
+                    *s = menu.clone();
+                    s
+                })
+            })
+        }).embed(|e| {
+            e.title("Help menu")
+                .description("Get help!")
+        })
+    })
+    .await?;
+
+
+
+
+    while let Some(choice) = CollectComponentInteraction::new(ctx)
+        .filter(move |choice| choice.data.custom_id.starts_with(&ctx_id.to_string()))
+        .timeout(std::time::Duration::from_secs(60))
+        .await
+    {
+        choice.create_interaction_response(ctx, |r| {
+            r.kind(InteractionResponseType::UpdateMessage)
+                .interaction_response_data(|d| {
+                    d.embed(|e| {
+                        let cat_name = choice.data.values[0].clone();
+
+                        let cat = all_categories.iter()
+                            .find(|c| c.name == cat_name).unwrap(); 
+
+                        e.title(&cat.name)
+                            .description(&cat.description)
+                            .fields(cat.commands.iter()
+                                .map(|com| {
+                                    return (com.name.clone(), com.description.clone().unwrap_or("".into()), false) 
+                                })
+                            )
+                            .color(Color::BLURPLE)
+                            .footer(|f| {
+                                f.text("You can select another OC from the dropdown menu below!")
+                            })
+                    })
+                })
+        })
+        .await?;
+    }
+
+
+    
+    Ok(())
+}
+
+
+
 /// Information about the bot!
-#[poise::command(slash_command)]
+#[poise::command(slash_command, category = "Info")]
 pub async fn botinfo(ctx: Context<'_>) -> Result<(), Error> {
     let me = ctx.serenity_context().cache.current_user();
     let me_user = User::from(me);
@@ -52,7 +209,7 @@ pub async fn botinfo(ctx: Context<'_>) -> Result<(), Error> {
 }
 
 /// Information about the current server!
-#[poise::command(slash_command)]
+#[poise::command(slash_command, category = "Info")]
 pub async fn serverinfo(ctx: Context<'_>) -> Result<(), Error> {
     let g = ctx.guild().ok_or("I don't think you're in server rn")?;
     let owner = g.owner_id.to_user(&ctx).await?;
@@ -98,7 +255,7 @@ pub async fn serverinfo(ctx: Context<'_>) -> Result<(), Error> {
 
 
 
-#[poise::command(slash_command, prefix_command)]
+#[poise::command(slash_command, prefix_command, category = "Info")]
 pub async fn character(ctx: Context<'_>) -> Result<(), Error> {
     let ocs = Oc::get_all(&ctx.data().db).await?;
 
@@ -122,7 +279,7 @@ pub async fn character(ctx: Context<'_>) -> Result<(), Error> {
 
     let mut menu = CreateSelectMenu::default();
     menu.custom_id(&menu_id)
-        .options(|o| o.set_options(menu_options.clone()))
+        .options(|o| o.set_options(menu_options))
         .placeholder("Select a character to display!");
 
 
@@ -193,14 +350,3 @@ pub async fn character(ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
 
-
-
-#[poise::command(slash_command, prefix_command)]
-pub async fn help(ctx: Context<'_>, command: Option<String>) -> Result<(), Error> {
-    let configuration = poise::builtins::HelpConfiguration {
-        // [configure aspects about the help message here]
-        ..Default::default()
-    };
-    poise::builtins::help(ctx, command.as_deref(), configuration).await?;
-    Ok(())
-}

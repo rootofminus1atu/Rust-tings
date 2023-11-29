@@ -1,6 +1,6 @@
 use anyhow::Context as _;
 
-use poise::serenity_prelude::{self as serenity, GatewayIntents, Client, ChannelId};
+use poise::serenity_prelude::{self as serenity};
 use shuttle_poise::ShuttlePoise;
 use shuttle_secrets::SecretStore;
 
@@ -25,7 +25,7 @@ mod commands {
         pub mod popequote;
     }
 }
-use commands::fun::{hello, oracle, kazakhstan, sashley, bite};
+use commands::fun::{hello, kazakhstan, sashley, bite};
 use commands::randomizer::{fox, popequote};
 use commands::info::{botinfo, serverinfo, help, character};
 use commands::admin::say;
@@ -35,7 +35,6 @@ use commands::events::event_handler;
 use commands::db_access;
 
 use sqlx_postgres::{PgPool, PgPoolOptions};
-use tokio_schedule::every;
 
 
 // User data, which is stored and accessible in all command invocations
@@ -63,13 +62,12 @@ type Context<'a> = poise::Context<'a, Data, Error>;
 // help command
 // db for stuff like clairvoyance, responses, and more
 // --- paginate stuff like popequote
+// reorder commands into folders each for a category
 
 // URGENT:
-// fix the timed events
-// REPLACE CRON SCHEDULING WITH TOKIO INTERVAL_AT - that or remember to restart the project env each time
+// --- fix the timed events
+// --- REPLACE CRON SCHEDULING WITH TOKIO INTERVAL_AT - that or remember to restart the project env each time
 
-use chrono::{DateTime, Utc, Timelike};
-use tokio_schedule::Job;
 
 
 #[shuttle_runtime::main]
@@ -103,7 +101,6 @@ async fn poise(#[shuttle_secrets::Secrets] secret_store: SecretStore) -> Shuttle
         .options(poise::FrameworkOptions {
             commands: vec![
                 hello(),
-                oracle(),
                 sashley(),
                 kazakhstan(),
                 bite(),

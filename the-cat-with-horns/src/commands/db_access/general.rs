@@ -19,7 +19,7 @@ pub async fn owner(_: Context<'_>) -> Result<(), Error> {
 #[poise::command(
     prefix_command,
     slash_command,
-    subcommands("popequote_add", "popequote_all"),
+    subcommands("popequote_add", "popequote_all", "popequote_delete", "popequote_update"),
     subcommand_required
 )]
 pub async fn popequote(_: Context<'_>) -> Result<(), Error> {
@@ -38,7 +38,7 @@ pub async fn popequote_add(
 
     let quote = PopeQuote::insert_one(&ctx.data().db, &quote_pl, &quote_en).await?;
 
-    ctx.say(format!("Inserted: **id**: {}, **pl**: {}, **en**: {}", quote.id, quote.pl, quote.en)).await?;
+    ctx.say(format!("Inserted: **id**: {} - **pl**: {} - **en**: {}", quote.id, quote.pl, quote.en)).await?;
 
     Ok(())
 }
@@ -77,6 +77,45 @@ pub async fn popequote_all(ctx: Context<'_>) -> Result<(), Error> {
     Ok(())
 }
 
+
+#[poise::command(prefix_command, slash_command, rename = "delete")]
+pub async fn popequote_delete(
+    ctx: Context<'_>,
+    #[description = "The id of the quote you want to delete"]
+    id: i32
+) -> Result<(), Error> {
+
+    let deleted = PopeQuote::delete_by_id(&ctx.data().db, id).await?;
+
+    let _ = match deleted {
+        Some(quote) => ctx.say(format!("Deleted: **id**: {} - **pl**: {} - **en**: {}", quote.id, quote.pl, quote.en)).await?,
+        None => ctx.say(format!("Quote with id {} not found", id)).await?
+    };
+
+    Ok(())
+}
+
+
+#[poise::command(prefix_command, slash_command, rename = "update")]
+pub async fn popequote_update(
+    ctx: Context<'_>,
+    #[description = "The id of the quote you want to update"]
+    id: i32,
+    #[description = "The updated popequote in polish"]
+    new_pl: Option<String>,
+    #[description = "The updated popequote in english"]
+    new_en: Option<String>
+) -> Result<(), Error> {
+
+    let updated = PopeQuote::edit(&ctx.data().db, id, new_pl.as_deref(), new_en.as_deref()).await?;
+
+    let _ = match updated {
+        Some(quote) => ctx.say(format!("Updated: **id**: {} - **pl**: {} - **en**: {}", quote.id, quote.pl, quote.en)).await?,
+        None => ctx.say(format!("Quote with id {} not found", id)).await?
+    };
+
+    Ok(())
+}
 
 
 #[poise::command(

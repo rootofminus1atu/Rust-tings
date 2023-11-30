@@ -9,9 +9,9 @@ pub struct PopeQuote {
 }
 
 impl PopeQuote {
-    pub async fn insert_one(pool: &PgPool, pl: &str, en: &str) -> Result<PopeQuote, sqlx::Error> {
+    pub async fn insert_one(pool: &PgPool, pl: &str, en: &str) -> Result<Self, sqlx::Error> {
 
-        let result = query_as::<_, PopeQuote>(
+        let result = query_as::<_, Self>(
             "INSERT INTO popequote (pl, en) VALUES ($1, $2) RETURNING *",
             )
             .bind(pl)
@@ -22,9 +22,9 @@ impl PopeQuote {
         Ok(result)
     }
 
-    pub async fn get_all(pool: &PgPool) -> Result<Vec<PopeQuote>, sqlx::Error> {
+    pub async fn get_all(pool: &PgPool) -> Result<Vec<Self>, sqlx::Error> {
 
-        let results = query_as::<_, PopeQuote>(
+        let results = query_as::<_, Self>(
             "SELECT * FROM popequote"
             )
             .fetch_all(pool)
@@ -33,11 +33,39 @@ impl PopeQuote {
         Ok(results)
     }
 
-    pub async fn get_random(pool: &PgPool) -> Result<PopeQuote, sqlx::Error> {
-        let result = query_as::<_, PopeQuote>(
-            "SELECT * FROM popequote ORDER BY RANDOM() LIMIT 1
-            ")
+    pub async fn get_random(pool: &PgPool) -> Result<Self, sqlx::Error> {
+        let result = query_as::<_, Self>(
+            "SELECT * FROM popequote ORDER BY RANDOM() LIMIT 1"
+            )
             .fetch_one(pool)
+            .await?;
+
+        Ok(result)
+    }
+
+    pub async fn delete_by_id(pool: &PgPool, id: i32) -> Result<Option<Self>, sqlx::Error> {
+        let result = query_as::<_, Self>(
+            "DELETE FROM popequote WHERE id = $1 RETURNING *"
+            )   
+            .bind(id)
+            .fetch_optional(pool)
+            .await?;
+
+        Ok(result)
+    }
+
+    pub async fn edit(pool: &PgPool, id: i32, new_pl: Option<&str>, new_en: Option<&str>) -> Result<Option<Self>, sqlx::Error> {
+        let result = query_as::<_, Self>("
+            UPDATE popequote
+            SET pl = COALESCE($1, pl),
+                en = COALESCE($2, en)
+            WHERE id = $3
+            RETURNING *
+            ")
+            .bind(new_pl)
+            .bind(new_en)
+            .bind(id)
+            .fetch_optional(pool)
             .await?;
 
         Ok(result)

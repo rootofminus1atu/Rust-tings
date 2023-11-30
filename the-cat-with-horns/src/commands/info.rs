@@ -107,7 +107,7 @@ pub async fn help(ctx: Context<'_>) -> Result<(), Error> {
         .options(|o| o.set_options(ops))
         .placeholder("Select a help section");
 
-    ctx.send(|m| {
+    let mut message = ctx.send(|m| {
         m.components(|c| {
             c.create_action_row(|a| {
                 a.create_select_menu(|s| {
@@ -121,9 +121,9 @@ pub async fn help(ctx: Context<'_>) -> Result<(), Error> {
                 .color(Color::BLURPLE)
         })
     })
+    .await?
+    .into_message()
     .await?;
-
-
 
 
     while let Some(choice) = CollectComponentInteraction::new(ctx)
@@ -172,7 +172,16 @@ pub async fn help(ctx: Context<'_>) -> Result<(), Error> {
         .await?;
     }
 
-
+    message.edit(ctx, |m| {
+        m.components(|c| {
+            c.create_action_row(|a| {
+                a.create_select_menu(|s| {
+                    *s = menu.clone();
+                    s.disabled(true)
+                })
+            })
+        })
+    }).await?;
     
     Ok(())
 }

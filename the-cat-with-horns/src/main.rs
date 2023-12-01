@@ -64,11 +64,12 @@ type Context<'a> = poise::Context<'a, Data, Error>;
 // --- paginate stuff like popequote
 // reorder commands into folders each for a category
 // abstract away the select menu + embeds display
+// add CRUD for oc... or introduce something like orm-lite/diesel
 
 // URGENT:
 // --- fix the timed events
 // --- REPLACE CRON SCHEDULING WITH TOKIO INTERVAL_AT - that or remember to restart the project env each time
-
+// REMOVE POPEQUOTE STRUCT FROM HELPERS
 
 
 #[shuttle_runtime::main]

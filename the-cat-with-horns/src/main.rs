@@ -5,7 +5,6 @@ use shuttle_poise::ShuttlePoise;
 use shuttle_secrets::SecretStore;
 
 mod helpers {
-    pub mod popequotestruct;
     pub mod discord;
     pub mod datetime;
     pub mod misc;
@@ -65,6 +64,7 @@ type Context<'a> = poise::Context<'a, Data, Error>;
 // reorder commands into folders each for a category
 // abstract away the select menu + embeds display
 // add CRUD for oc... or introduce something like orm-lite/diesel
+// test permissions
 
 // URGENT:
 // --- fix the timed events

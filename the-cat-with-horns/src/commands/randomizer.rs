@@ -1,8 +1,8 @@
 use crate::{Context, Error};
 use poise::serenity_prelude::{self as serenity, Color};
 use serenity::{CreateEmbed, CreateEmbedAuthor};
-use crate::helpers::popequotestruct::PopeQuote;
 use crate::helpers::discord::send_embed;
+use crate::commands::db_access::popequote::PopeQuote;
 
 async fn fetch_animal_img(url: &str, field_name: &str) -> Result<String, Error> {
     let img: String = reqwest::get(url)
@@ -36,7 +36,7 @@ pub async fn fox(ctx: Context<'_>) -> Result<(), Error> {
 /// Pope John Paul the 2nd's wisdom
 #[poise::command(slash_command, prefix_command, category = "Randomizer")]
 pub async fn popequote(ctx: Context<'_>) -> Result<(), Error> {
-    let q = PopeQuote::get_random_quote().ok_or("No quote found somehow...")?;
+    let q = PopeQuote::get_random(&ctx.data().db).await?;
 
     let mut author = CreateEmbedAuthor::default();
     author.name("John Paul the 2nd")
@@ -44,11 +44,11 @@ pub async fn popequote(ctx: Context<'_>) -> Result<(), Error> {
 
     let mut embed = CreateEmbed::default();
     embed.title("Quote:")
-    .description(format!("*{}*", q.quote_pl))
+    .description(format!("*{}*", q.pl))
     .set_author(author)
     .field(
         "Quote translation:", 
-        format!("*{}*", q.quote_en), 
+        format!("*{}*", q.en), 
         true)
     .color(Color::BLURPLE);
 

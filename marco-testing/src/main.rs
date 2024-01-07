@@ -12,6 +12,18 @@ macro_rules! generate_dollar_str {
     }
 }
 
+macro_rules! generate_coalesce2 {
+    () => { "" };
+    ($($name:ident),*) => {
+        [$(stringify!($name),)*]
+            .iter()
+            .enumerate()
+            .map(|(i, elem)| format!("{} = COALESCE(${}, {})", elem, i + 1, elem))  // id like to pass in this closure into the macro is that possible?
+            .collect::<Vec<_>>()
+            .join(", ")
+    }
+}
+
 fn join_with_template<F>(strs: &[&str], template_func: F, separator: &str) -> String
 where
     F: Fn((usize, &&str)) -> String,
@@ -26,8 +38,64 @@ where
 macro_rules! count_idents {
     () => { 0 };
     ($single_ident:ident) => { 1 };
-    ($_ignored:ident, $($rest:ident)*) => { 1 + count_idents!($($rest)*) };
+    ($_ignored:ident, $($rest:ident),*) => { 1 + count_idents!($($rest),*) };
 }
+
+
+/// ALMOST WORKED
+macro_rules! one_two_three {
+    () => { ("", 0) } ;
+    ($single_ident:ident) => { 
+        (
+            format!("{} = COALESCE(${}, {})", stringify!($single_ident), 1, stringify!($single_ident)), 
+            1
+        ) 
+    };
+    ($first:ident, $($rest:ident),*) => {
+        {
+            let (rest_str, rest_count) = one_two_three!($($rest),*);
+
+            (
+                format!("{}, {} = COALESCE(${}, {})", rest_str, stringify!($first), 1 + rest_count, stringify!($first)),
+                1 + rest_count
+            )
+        }
+    };
+}
+
+
+macro_rules! new_try {
+    () => { "" };
+    ($single_ident:ident) => { format!("{} = COALESCE(${}, {})", stringify!($single_ident), 1, stringify!($single_ident)) };
+    ($first:ident, $($rest:ident),*) => {  
+        {
+
+            format!("{} = COALESCE(${}, {}), {}", stringify!($first), count_idents!($($rest),*) + 1, stringify!($first), new_try!($($rest),*))
+        }
+    };
+}
+
+
+
+
+
+macro_rules! __gen_cos_internal {
+    ($start:expr, $single_ident:ident) => {
+        format!("{} = COALESCE(${}, {})", stringify!($single_ident), $start, stringify!($single_ident))
+    };
+    ($num:expr, $first:ident, $($rest:ident),*) => {
+        format!("{} = COALESCE(${}, {}), {}", stringify!($first), $num, stringify!($first), __gen_cos_internal!($num + 1, $($rest),*))
+    };
+}
+
+macro_rules! generate_coalesce {
+    () => { "" };
+    ($($idents:ident),*) => {
+        __gen_cos_internal!(1, $($idents),*) 
+    };
+}
+
+
 
 
 
@@ -50,6 +118,7 @@ macro_rules! generate_table {
 
         impl $struct_name {
             const TABLE_NAME: &str = stringify!($table_name);
+            // const COA: &str = generate_coalesce!($pk_name, $($field_name),*);
 
             fn new($pk_name: $pk_type, $($field_name: $field_type),*) -> Self {
                 $struct_name {
@@ -65,7 +134,7 @@ macro_rules! generate_table {
                     stringify!($($field_name),*),
                     join_with_template(
                         &[$(stringify!($field_name),)*],
-                        |(i, _)| format!("${}", i),
+                        |(i, _)| format!("${}", i + 1),
                         ", "
                     )
                 );
@@ -109,12 +178,8 @@ macro_rules! generate_table {
                     ", "
                 );
 
-                let sql = format!("
-                    UPDATE {}
-                    SET 
-                    {}
-                    WHERE {} = ${}
-                    RETURNING *",
+                let sql = format!(
+                    "UPDATE {} SET {} WHERE {} = ${} RETURNING *",
                     Self::TABLE_NAME,
                     coalesce_stuff,
                     stringify!($pk_name),
@@ -163,6 +228,8 @@ macro_rules! count_idents2 {
 }
 
 
+
+
 macro_rules! generate_placeholders {
     () => { "" };
     ($($field_name:ident),*) => {
@@ -173,7 +240,6 @@ macro_rules! generate_placeholders {
         }
     };
 }
-
 
 
 fn main() {
@@ -193,7 +259,14 @@ fn main() {
     println!("got {}", res);
 
 
+    let pool = "pool";
 
     // let sql = Person::insert_one("hi", "nammeee".to_string(), 4);
-    let sql = Person::edit("hi", 22, Some("hi".into()), Some(99));
+    let _ = Person::edit(pool, 22, Some("hi".into()), Some(99));
+    let _ = Person::delete_by_pk(pool, 23);
+    let _ = Person::get_all(pool);
+    let _ = Person::insert_one(pool, "namee".into(), 80);
+
+    let hh = generate_coalesce!(hello, there, human);
+    println!("{:?}", hh);
 }

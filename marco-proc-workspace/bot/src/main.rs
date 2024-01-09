@@ -13,4 +13,5 @@ struct Person {
 
 fn main() {
     Person::get_all();
+    Person::insert(1, "hi".into());
 }

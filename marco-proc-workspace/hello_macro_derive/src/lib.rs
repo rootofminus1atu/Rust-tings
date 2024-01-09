@@ -9,29 +9,46 @@ use syn::{Data, Fields, Type};
 pub fn generate_table(input: TokenStream) -> TokenStream {
     let ast = syn::parse(input).unwrap();
 
+
     generate_table_impl(&ast)
 }
 
 fn generate_table_impl(input: &syn::DeriveInput) -> TokenStream {
     let name = &input.ident;
-    
-    let Data::Struct(data_struct) = &input.data else { unimplemented!("only structs for now") }; 
-    let Fields::Named(named_fields)  = &data_struct.fields else { unimplemented!("only named fields") };
 
-    let ident_names: Vec<&syn::Ident> = named_fields.named.iter().map(|field| {
-        let field_name = field.ident.as_ref().expect("Named fields are expected");
-        field_name
-    }).collect::<Vec<_>>();
-    
+    let Data::Struct(data_struct) = &input.data else { unimplemented!("only structs for now") }; 
+    let Fields::Named(fields)  = &data_struct.fields else { unimplemented!("only named fields") };
+    let fields = &fields.named;
+
+    let names_and_types = fields
+        .iter()
+        .map(|f| {
+            let name = f.ident.as_ref().expect("Named fields are expected");
+            let ty = &f.ty;
+            (name, ty)
+        })
+        .collect::<Vec<_>>();
+
+    let names_and_types_tokens = names_and_types
+        .iter()
+        .map(|(name, ty)| quote!(#name: #ty))
+        .collect::<Vec<_>>();
 
     let gen = quote! {
         impl #name {
             pub fn get_all() {
                 println!("hello my name is {} and my fields are", stringify!(#name));
-                #(println!("- {}", stringify!(#ident_names));)*
+                #(println!("- {}", stringify!(#names_and_types_tokens));)*
+            }
+
+            pub fn insert(#(#names_and_types_tokens),*) {
+                println!("hi")
             }
         }
     };
+
+    
+    println!("TOKENS: {}", gen);
 
     gen.into()
 }

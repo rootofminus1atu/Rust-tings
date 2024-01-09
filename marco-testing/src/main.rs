@@ -242,6 +242,8 @@ macro_rules! generate_placeholders {
 }
 
 
+
+
 fn main() {
     // Create an instance of the generated struct
     

@@ -6,7 +6,7 @@ macro_rules! generate_dollar_str {
         [$(stringify!($name),)*]
             .iter()
             .enumerate()
-            .map(|(a, _)| format!("${}", a + 1))  // id like to pass in this closure into the macro is that possible?
+            .map(|(a, _)| format!("${}", a + 1))
             .collect::<Vec<_>>()
             .join(", ")
     }
@@ -18,7 +18,7 @@ macro_rules! generate_coalesce2 {
         [$(stringify!($name),)*]
             .iter()
             .enumerate()
-            .map(|(i, elem)| format!("{} = COALESCE(${}, {})", elem, i + 1, elem))  // id like to pass in this closure into the macro is that possible?
+            .map(|(i, elem)| format!("{} = COALESCE(${}, {})", elem, i + 1, elem))
             .collect::<Vec<_>>()
             .join(", ")
     }
@@ -271,4 +271,8 @@ fn main() {
 
     let hh = generate_coalesce!(hello, there, human);
     println!("{:?}", hh);
+
+
+
+    let n = count_idents!(hi, lol, idk);
 }

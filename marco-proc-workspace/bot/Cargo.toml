@@ -9,3 +9,4 @@ edition = "2021"
 hello_macro = { path = "../hello_macro" }
 hello_macro_derive = { path="../hello_macro_derive" }
 rand = "0.8.5"
+sqlx = { version = "0.7.3", features = ["postgres", "migrate", "runtime-tokio-native-tls"] }

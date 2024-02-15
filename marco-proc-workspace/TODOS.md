@@ -1,1 +1,3 @@
 - add a description attribute to all the struct fields
+- improve the TableData struct
+- divide it into 2 separable derives

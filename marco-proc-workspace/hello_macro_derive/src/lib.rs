@@ -2,7 +2,6 @@ extern  crate proc_macro;
 
 use proc_macro::TokenStream;
 use quote::quote;
-use syn::{Data, Fields, DeriveInput, Result, Error};
 
 mod table_impl;
 use table_impl::table_impl;
@@ -15,7 +14,7 @@ use table_impl::table_impl;
 /// - `update()`
 /// 
 /// All of them have as their 1st argument a `&PgPool` argument.
-#[proc_macro_derive(TableThing, attributes(table_name, pk))]
+#[proc_macro_derive(TableThing, attributes(table_name, pk, lol))]
 pub fn generate_table(input: TokenStream) -> TokenStream {
     let ast = syn::parse_macro_input!(input);
     

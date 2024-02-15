@@ -1,0 +1,1 @@
+- add a description attribute to all the struct fields

@@ -1,0 +1,14 @@
+[package]
+name = "timetablenexus"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+axum = "0.7.3"
+chrono = "0.4.34"
+reqwest = "0.11.24"
+scraper = "0.18.1"
+shuttle-axum = "0.39.0"
+shuttle-runtime = "0.39.0"
+tokio = "1.28.2"
+tracing = "0.1.40"

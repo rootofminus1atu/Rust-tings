@@ -176,6 +176,9 @@ impl LessonPreProcessedDetails {
 }
 
 /// Processes a given collection of timetable cells and produces lessons based on those
+/// 
+/// Assumptions:
+/// - A lesson can NOT last longer than 1 hour
 fn process_timetable_cells(timetable_cells: Vec<Vec<ElementRef<'_>>>) -> Result<Vec<Vec<Lesson>>, Box<dyn std::error::Error>> {
     let lessons = timetable_cells.iter()
         .enumerate()
@@ -186,14 +189,12 @@ fn process_timetable_cells(timetable_cells: Vec<Vec<ElementRef<'_>>>) -> Result<
             let mut lessons_in_day = vec![];
 
             for cell in day {
-                // colspan tells us how long a lesson will be going for
-                // 1 colspan = 30 minutes
+                // to see what colspan means, check its doc
                 let colspan = parse_colspan(cell)?;
-                
-                // if there is a lesson going on
-                // we check if there is one by checking if `colspan` is SOME
-                if colspan.is_some() {
-                    let duration = colspan.map(|n| n / 2).unwrap_or(1);
+
+                // read the below as "if there is a lesson going on"
+                if let Some(colspan_num) = colspan { 
+                    let duration = colspan_num / 2;
 
                     // extract more data
                     // maybe the following 2 lines could be moves inside the Lesson struct

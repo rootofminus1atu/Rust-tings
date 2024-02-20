@@ -3,16 +3,8 @@
 use scraper::{Element, ElementRef, Html, Selector};
 use chrono::{NaiveTime, TimeDelta};
 
-fn main() {
-    println!("hi the html is");
-
-    let lessons = get_lessons(HTML_STRING).expect("buuuhhh");
-
-    dbg!(&lessons);
-}
-
 /// Retrieves a collection of Lessons, given an html string
-fn get_lessons(html_str: &str) -> Result<Vec<Vec<Lesson>>, Box<dyn std::error::Error>> {
+pub fn get_lessons(html_str: &str) -> Result<Vec<Vec<Lesson>>, Box<dyn std::error::Error>> {
     let document = Html::parse_document(html_str);
 
     let week_day_elements = get_week_day_elements(&document)?;
@@ -83,8 +75,9 @@ fn parse_colspan(elem: &ElementRef<'_>) -> Result<Option<i32>, Box<dyn std::erro
     }
 }
 
+
 #[derive(Debug)]
-struct Lesson {
+pub struct Lesson {
     start: NaiveTime,
     duration: i32,
     day: i32,
@@ -98,7 +91,7 @@ impl Lesson {
 }
 
 #[derive(Debug)]
-struct LessonDetails {
+pub struct LessonDetails {
     subject: String,
     room_id: String,
     room_desc: String,
@@ -144,7 +137,7 @@ impl LessonDetails {
 }
 
 #[derive(Debug)]
-struct LessonPreProcessedDetails {
+pub struct LessonPreProcessedDetails {
     subject: String,
     room_details: String,
     lecturer: String,
@@ -157,7 +150,7 @@ impl LessonPreProcessedDetails {
     }
 
     /// Assumptions:
-    /// - The details of a lesson are kept in <font> elements
+    /// - The details of a lesson are kept in \<font> elements
     /// - There's always 4 such elements
     pub fn from_element(element: &ElementRef<'_>) -> Result<Self, Box<dyn std::error::Error>> {
         let font_selector = Selector::parse("font").unwrap();
@@ -219,6 +212,3 @@ fn process_timetable_cells(timetable_cells: Vec<Vec<ElementRef<'_>>>) -> Result<
 
     Ok(lessons)
 }
-
-
-const HTML_STRING: &str = r###"j"###;

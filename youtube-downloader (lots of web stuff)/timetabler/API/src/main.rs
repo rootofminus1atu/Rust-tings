@@ -102,8 +102,7 @@ async fn main() -> shuttle_axum::ShuttleAxum {
                     request.uri()
                 )
             }),
-        )
-        ;
+        );
 
     Ok(router.into())
 }

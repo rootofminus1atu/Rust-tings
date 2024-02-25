@@ -1,59 +1,18 @@
 use core::panic;
 
+// todos:
+// testing done well not this bs
+// use BetterOperation
+// remove Box from Expression
+
+
 fn main() {
-    let expr = Expression::Operation(Box::new(
-        Operation::Mult {
-            left: Expression::Int(2),
-            right: Expression::Operation(Box::new(
-                Operation::Pow { 
-                    base: Expression::Var("x".into()), 
-                    power: Expression::Int(5) 
-                }
-            ))
-        }
-    ));
-
-    
-
-    let exprs = vec![
-        // parentheses
-        "(((x)^(2)) - (2)) / ((5) * (((10) - (x)) * (x)^(3)))",
-        "(x^2 - 2) / (5 * (10 - x) * x^3)",
-
-        // more complicated parentheses
-        "((x - 1) * (x + 1)) / (5 * (10 - (x + 3)(x - 2)) * (2 + y))",
-        "1 / (5 * (10 - (x + 3)(x - 2)) * (2 + y))",
-        "((x - 1) * (x + 1)) / 1",
-
-        // limited parantheses
-        "2 / x",
-        "x / 2",
-        "(2 + y) / x^2",
-        "y^2 / (x - 4)",
-        "x / 2 / 3",
-        "1 / (2 / 3)",
-        "(1 / 2) / 3",
-        "(1 / ( 2 / ( 3 / 4 )))",
-
-        // empty
-        "",
-
-        // order of operations
-        "1 + 2 * 3",
-        "1 * 2 + 3",
-        "1 + 2 + 3",
-        "1 + 2 - 3",
-        "1 - 2 + 3",
-        "1 - 2 - 3"
-    ];
-
-    // let res = exprs.iter().map(|s| Token::tokenize(s)).collect::<Vec<_>>();
-
-    for thing in exprs {
-        println!("{} -> {:?}", thing, Token::tokenize(thing));
-    }
-
-
+    // what's supported currently:
+    // - numbers
+    // - variables
+    // - addition and subtraction
+    // 
+    // no other operations and no parentheses (will add them on later)
     let tests1 = vec![
         "1 + 2",
         "2 + x",
@@ -65,11 +24,11 @@ fn main() {
     ];
 
     for s in tests1 {
-        println!("{} -> {:?}", s, Expression::from_tokens(&Token::tokenize(s)));
+        println!("{} -> {:?}", s, Token::tokenize(s));
     }
 }
 
-
+// should I use something denormalized like this (no Val, Int and Var directly here)
 #[derive(Debug, Clone, PartialEq)]
 enum Token2 {
     Int(i32),
@@ -83,6 +42,7 @@ enum Token2 {
     RPar,
 }
 
+// or something more normalized like this (Val that can be Int or Var)
 #[derive(Debug, Clone, PartialEq)]
 enum Token {
     Val(Val),
@@ -180,42 +140,14 @@ impl Token {
 
 #[derive(Debug)]
 enum Expression {
-    Int(i32),
+    Val(Val),
+    Int(i32),  // BETTER NAMES AND REARRANGE THIS
     Var(String),
-    Operation(Box<Operation>)
-}
-
-/// An intermediate representation containig both tokens and expressions that have already been parsed.
-///
-/// Because the order of operations and other priorities exist. At least I think this will make managing that easier.
-#[derive(Debug)] 
-enum Tokexpr {
-    Token(Token),
-    Expression(Expression)
-}
-
-impl Tokexpr {
-    pub fn from_tokens(tokens: &[Token]) -> Vec<Tokexpr> {
-        tokens.into_iter().map(|t| Tokexpr::Token(t.clone())).collect::<Vec<_>>()
-    } 
-}
-
-
-
-#[derive(Clone)]
-struct Inner;
-
-enum Wrapper {
-    Left(Inner),
-    Right
-}
-
-impl Wrapper {
-    pub fn wraps_collection(inners: &mut [Inner]) -> &mut [Wrapper] {
-        &mut inners.iter().map(|i| Wrapper::Left(i.clone())).collect::<Vec<_>>()
+    BinaryOp {
+        kind: OperationKind,
+        left: Box<Expression>,
+        right: Box<Expression>
     }
-
-    // is there a way to avoid having to clone and return an owned type? is it possible to have it be more referential
 }
 
 impl Expression {
@@ -231,8 +163,8 @@ impl Expression {
         // then * /
 
         // then + -
+        // doing this first actually in `from_tokens` down below
         
-
 
         Self::Int(0)
     }
@@ -243,8 +175,6 @@ impl Expression {
             Val::Var(x) => Expression::Var(x.clone())
         }
     }
-
-    
 
     fn from_tokens(tokens: &[Token]) -> Self {
         let res = match tokens {
@@ -277,16 +207,13 @@ impl Expression {
     }
 }
 
-
-// whats a better way? enum of trait? im representing simple binary operatiors that just have expressions on the left/right, should i use enum or trait or both?
-
 #[derive(Debug)]
-enum Operation {
-    Add { left: Expression, right: Expression },
-    Subt { left: Expression, right: Expression },
-    Mult { left: Expression, right: Expression },
-    Div { left: Expression, right: Expression },
-    Pow { base: Expression, power: Expression }
+enum OperationKind {
+    Add,
+    Subt,
+    Mult,
+    Div,
+    Pow
 }
 
 

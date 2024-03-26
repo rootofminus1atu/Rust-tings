@@ -10,7 +10,11 @@ pub enum Error {
     LoginFail,
 
     // model error
-    TicketDeleteFailIdNotFound { id: u64 }
+    TicketDeleteFailIdNotFound { id: u64 },
+
+    // auth error
+    AuthFailNoAuthTokenCookie,
+    AuthFailTokenWrongFormat
 }
 
 impl IntoResponse for Error {

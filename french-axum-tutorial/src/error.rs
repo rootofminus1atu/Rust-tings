@@ -1,10 +1,11 @@
 use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
+use serde::Serialize;
 
 
 pub type Res<T> = core::result::Result<T, Error>;
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Serialize)]
 
 pub enum Error {
     LoginFail,
@@ -14,7 +15,8 @@ pub enum Error {
 
     // auth error
     AuthFailNoAuthTokenCookie,
-    AuthFailTokenWrongFormat
+    AuthFailTokenWrongFormat,
+    AuthFailCtxNotInRequestExt
 }
 
 impl IntoResponse for Error {

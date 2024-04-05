@@ -41,6 +41,65 @@ impl Coord {
         Self { i, j }
     }
 
+    /// Returns an iterator over the neighbors of the coordinate.
+    ///
+    /// The neighbors of a coordinate are the 8 cells that surround it, if they exist. This method takes into account the dimensions of the grid to ensure that it doesn't return coordinates outside the grid.
+    ///
+    /// # Arguments
+    ///
+    /// * `rows`: The number of rows in the grid.
+    /// * `cols`: The number of columns in the grid.
+    ///
+    /// # Returns
+    ///
+    /// An iterator over the neighbors of the coordinate.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let coord = Coord::new(1, 2);
+    /// let neighbors = coord.neighbors(3, 3);
+    /// for neighbor in neighbors {
+    ///     println!("{:?}", neighbor);
+    /// }
+    /// ```
+    ///
+    /// This will print:
+    ///
+    /// ```
+    /// Coord { i: 0, j: 1 }
+    /// Coord { i: 0, j: 2 }
+    /// Coord { i: 0, j: 3 }
+    /// Coord { i: 1, j: 1 }
+    /// Coord { i: 1, j: 3 }
+    /// Coord { i: 2, j: 1 }
+    /// Coord { i: 2, j: 2 }
+    /// Coord { i: 2, j: 3 }
+    /// ```
+    ///
+    /// # Visual Representation
+    ///
+    /// Here's a simple representation of a cell and its neighbors in a grid. The filled square (■) represents the cell in question, and the empty squares (□) represent its neighbors.
+    ///
+    /// ```
+    /// □ □ □
+    /// □ ■ □
+    /// □ □ □
+    /// ```
+    ///
+    /// In this representation, the cell at the center (■) has eight neighbors (□), assuming it's not on the edge of the grid. If the cell is on the edge or in a corner of the grid, it will have fewer neighbors. For example, a cell in the corner of the grid would have only three neighbors:
+    ///
+    /// ```
+    /// ■ □
+    /// □ □
+    /// ```
+    ///
+    /// And a cell on the edge of the grid (but not in a corner) would have five neighbors:
+    ///
+    /// ```
+    /// □ ■ □
+    /// □ □ □
+    /// ```
     pub fn neighbors(&self, rows: usize, cols: usize) -> impl Iterator<Item = Self> + '_ {
         let lower_i = self.i.saturating_sub(1);
         let lower_j = self.j.saturating_sub(1);

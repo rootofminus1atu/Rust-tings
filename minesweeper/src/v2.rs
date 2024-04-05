@@ -14,21 +14,6 @@ pub enum MinesweeperError {
 }
 
 
-#[derive(Debug, Clone)]
-pub enum MinesweeperCell {
-    Num(i32),
-    Bomb
-}
-
-impl MinesweeperCell {
-    pub fn increment_if_possible(&mut self) {
-        if let Self::Num(n) = self {
-           *n += 1;
-        }
-    }
-}
-
-
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq)]
 pub struct Coord {
@@ -125,29 +110,44 @@ impl Coord {
     }
 }
 
-#[derive(Debug, Clone)]
-pub struct DimensionsWithBombsAmount {
+
+
+#[derive(Debug, Clone, Copy)]
+pub struct NonZeroDimensions {
     rows: usize,
-    cols: usize,
-    amount: usize
+    cols: usize
 }
 
-impl DimensionsWithBombsAmount {
-    pub fn parse(rows: usize, cols: usize, amount: usize) -> Result<Self, MinesweeperError> {
+impl NonZeroDimensions {
+    pub fn parse(rows: usize, cols: usize) -> Result<Self, MinesweeperError> {
         if rows == 0 || cols == 0 {
             return Err(MinesweeperError::InvalidDimensions);
         }
 
-        if amount > rows * cols {
+        Ok(Self { rows, cols })
+    }
+}
+
+
+
+#[derive(Debug, Clone)]
+pub struct DimensionsWithBombsAmount {
+    dims: NonZeroDimensions,
+    amount: usize
+}
+
+impl DimensionsWithBombsAmount {
+    pub fn parse(dims: NonZeroDimensions, amount: usize) -> Result<Self, MinesweeperError> {
+        if amount > dims.rows * dims.cols {
             return Err(MinesweeperError::TooManyBombs);
         }
 
-        Ok(Self { rows, cols, amount })
+        Ok(Self { dims, amount })
     }
 
     pub fn n_random_coords(&self) -> HashSet<Coord> {
-        let mut all_coords = (0..self.rows)
-            .flat_map(|i| (0..self.cols).map(move |j| Coord::new(i, j)))
+        let mut all_coords = (0..self.dims.rows)
+            .flat_map(|i| (0..self.dims.cols).map(move |j| Coord::new(i, j)))
             .collect::<Vec<_>>();
     
         random_shuffle(&mut all_coords);
@@ -163,36 +163,57 @@ pub fn random_shuffle<T>(list: &mut [T]) {
     list.shuffle(&mut rng);
 }
 
+
+
 #[derive(Debug, Clone)]
 pub struct DimensionsWithBombs {
-    rows: usize,
-    cols: usize,
+    dims: NonZeroDimensions,
     bombs: HashSet<Coord>
 }
 
 impl DimensionsWithBombs {
-    pub fn parse(rows: usize, cols: usize, bombs: HashSet<Coord>) -> Result<Self, MinesweeperError> {
-        DimensionsWithBombsAmount::parse(rows, cols, bombs.len())?;
+    pub fn parse(dims: NonZeroDimensions, bombs: HashSet<Coord>) -> Result<Self, MinesweeperError> {
+        DimensionsWithBombsAmount::parse(dims, bombs.len())?;
 
-        if bombs.iter().any(|bomb_coord| bomb_coord.i >= rows || bomb_coord.j >= cols) {
+        if bombs.iter().any(|bomb_coord| bomb_coord.i >= dims.rows || bomb_coord.j >= dims.cols) {
             return Err(MinesweeperError::BombsOutsideBounds);
         }
 
-        Ok(Self { rows, cols, bombs })
+        Ok(Self { dims, bombs })
     }
 
     pub fn new_with_random_bombs(dims_with_amounts: DimensionsWithBombsAmount) -> Self {
         let bombs = dims_with_amounts.n_random_coords();
 
         let DimensionsWithBombsAmount {
-            rows,
-            cols,
+            dims,
             ..
         } = dims_with_amounts;
         
-        Self { rows, cols, bombs }
+        Self { dims, bombs }
+    }
+
+    pub fn new_with_no_bombs(dims: NonZeroDimensions) -> Self {
+        Self { dims, bombs: HashSet::new() }
     }
 }
+
+
+
+#[derive(Debug, Clone)]
+pub enum MinesweeperCell {
+    Num(i32),
+    Bomb
+}
+
+impl MinesweeperCell {
+    pub fn increment_if_possible(&mut self) {
+        if let Self::Num(n) = self {
+           *n += 1;
+        }
+    }
+}
+
 
 
 #[derive(Debug, Clone)]
@@ -201,9 +222,9 @@ pub struct Minesweeper {
 }
 
 impl Minesweeper {
-    pub fn from_dims_with_bombs(dims_with_bombs: DimensionsWithBombs) -> Self {
-        let rows = dims_with_bombs.rows;
-        let cols = dims_with_bombs.cols;
+    pub fn new_with_bombs(dims_with_bombs: DimensionsWithBombs) -> Self {
+        let rows = dims_with_bombs.dims.rows;
+        let cols = dims_with_bombs.dims.cols;
         let bombs = dims_with_bombs.bombs;
 
         let mut cells = vec![vec![MinesweeperCell::Num(0); cols]; rows];
@@ -225,26 +246,19 @@ impl Minesweeper {
         Self { cells }
     }
 
-    pub fn new_random(rows: usize, cols: usize, amount: usize) -> Result<Self, MinesweeperError> {
-        let dims_with_amounts = DimensionsWithBombsAmount::parse(rows, cols, amount)?;
-
+    pub fn new_random(dims_with_amounts: DimensionsWithBombsAmount) -> Self {
         let dims_with_bombs = DimensionsWithBombs::new_with_random_bombs(dims_with_amounts);
 
-        Ok(Self::from_dims_with_bombs(dims_with_bombs))
+        Self::new_with_bombs(dims_with_bombs)
     }
 
-    pub fn new_empty(rows: usize, cols: usize) -> Result<Self, MinesweeperError> {
-        // could prob extract this check into something like NonZeroDimensions::parse()
-        if rows == 0 || cols == 0 {
-            return Err(MinesweeperError::InvalidDimensions);
-        }
+    pub fn new_empty(dims: NonZeroDimensions) -> Self {
+        let dims_with_bombs = DimensionsWithBombs::new_with_no_bombs(dims);
 
-        let cells = vec![vec![MinesweeperCell::Num(0); cols]; rows];
-
-        Ok(Self { cells })
+        Self::new_with_bombs(dims_with_bombs)
     }
 
-    // should be overrideable
+    // not important
     pub fn show(&self) {
         for row in &self.cells {
             let row_string: Vec<String> = row.iter().map(|cell| {
@@ -257,3 +271,4 @@ impl Minesweeper {
         }
     }
 }
+

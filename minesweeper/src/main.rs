@@ -2,7 +2,8 @@ use std::collections::HashSet;
 
 use tracing::info;
 use tracing_subscriber;
-use v2::DimensionsWithBombsAmount;
+use v1::MinesweeperCell;
+use v2::{Coord, DimensionsWithBombs, DimensionsWithBombsAmount, NonZeroDimensions};
 
 mod v1;
 mod v2;
@@ -12,20 +13,24 @@ fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
         .with_max_level(tracing::Level::DEBUG)
         .init();
 
-    // let m = v1::MinesweeperGrid::new_better(3, 3, 2);
-    // info!("we got\n{:?}", m.cells);
+    let dims = NonZeroDimensions::parse(2, 5)?;
 
-    // let h = v2::DimensionsWithBombs::parse(3, 5, 
-    //     HashSet::from([v2::Coord::new(0, 0), v2::Coord::new(0, 2)])
-    // )?;
-    // let m = v2::Minesweeper::from_dims_with_bombs(h);
+    let example_empty = v2::Minesweeper::new_empty(dims);
+    example_empty.show();
+    // 0  0  0  0  0
+    // 0  0  0  0  0
 
+    let example_random = v2::Minesweeper::new_random(DimensionsWithBombsAmount::parse(dims, 4)?);
+    example_random.show();
+    // possible outcome: 
+    // 0  1  B  B  3 
+    // 0  1  3  B  B
 
-    let a = v2::DimensionsWithBombs::new_with_random_bombs(
-        DimensionsWithBombsAmount::parse(5, 5, 6)?
-    );
-    let b = v2::Minesweeper::from_dims_with_bombs(a);
-    b.show();
+    let bombs = HashSet::from([Coord::new(1, 1), Coord::new(0, 3)]);
+    let example_rigged = v2::Minesweeper::new_with_bombs(DimensionsWithBombs::parse(dims, bombs)?);
+    example_rigged.show();
+    // 1  1  2  B  1
+    // 1  B  2  1  1
 
     Ok(())
 }

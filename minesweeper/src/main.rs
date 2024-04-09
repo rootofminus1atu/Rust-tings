@@ -1,4 +1,4 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, io::Write};
 
 use tracing::info;
 use tracing_subscriber;
@@ -7,30 +7,40 @@ use v2::{Coord, DimensionsWithBombs, DimensionsWithBombsAmount, NonZeroDimension
 
 mod v1;
 mod v2;
+mod v3;
 
 fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     tracing_subscriber::fmt()
-        .with_max_level(tracing::Level::DEBUG)
+        .with_max_level(tracing::Level::INFO)
         .init();
 
-    let dims = NonZeroDimensions::parse(2, 5)?;
+    let m = v2::Minesweeper::new_empty(v2::NonZeroDimensions::parse(5, 5)?);
 
-    let example_empty = v2::Minesweeper::new_empty(dims);
-    example_empty.show();
-    // 0  0  0  0  0
-    // 0  0  0  0  0
+    loop {
+        m.show();
+        println!("enter coords");
 
-    let example_random = v2::Minesweeper::new_random(DimensionsWithBombsAmount::parse(dims, 4)?);
-    example_random.show();
-    // possible outcome: 
-    // 0  1  B  B  3 
-    // 0  1  3  B  B
+        let coords = loop {
+            let mut input = String::new();
+            print!("> ");
+            std::io::stdout().flush().unwrap();
+            
+            std::io::stdin()
+                .read_line(&mut input)
+                .expect("bruh your terminal brojen");
 
-    let bombs = HashSet::from([Coord::new(1, 1), Coord::new(0, 3)]);
-    let example_rigged = v2::Minesweeper::new_with_bombs(DimensionsWithBombs::parse(dims, bombs)?);
-    example_rigged.show();
-    // 1  1  2  B  1
-    // 1  B  2  1  1
+            let res = match input.trim().split_whitespace().map(|s| s.parse::<i32>()).collect::<Result<Vec<_>, _>>() {
+                Ok(mut nums) if nums.len() == 2 => (nums.remove(0), nums.remove(0)),
+                _ => continue
+            };
+
+            println!("we got {:?}", res);
+
+            break res;
+        };
+
+        println!("entered: {:?}", coords);
+    }
 
     Ok(())
 }

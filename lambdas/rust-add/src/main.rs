@@ -31,10 +31,12 @@ async fn function_handler(event: LambdaEvent<Request>) -> Result<Response, Error
     let Request { a, b } = event.payload;
 
     info!("we got numbers: {} and {}", a, b);
+    info!("sum: {}", a + b);
+    info!("product: {}", a * b);
 
     // Prepare the response
     let resp = Response {
-        result: a + b
+        result: a * b
     };
 
     // Return `Response` (it will be serialized to JSON automatically by the runtime)
@@ -48,4 +50,5 @@ async fn main() -> Result<(), Error> {
     run(service_fn(function_handler)).await
 }
 
-// "{ \"a\": 4,  \"b\": 5}"
+// { "a": 4,  "b": 5}
+// cargo lambda invoke --data-ascii "{ \"a\": 4, \"b\": 5 }"

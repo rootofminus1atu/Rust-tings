@@ -1,0 +1,6 @@
+name = "worker-v2"
+main = "build/worker/shim.mjs"
+compatibility_date = "2024-07-28"
+
+[build]
+command = "cargo install -q worker-build && worker-build --release"

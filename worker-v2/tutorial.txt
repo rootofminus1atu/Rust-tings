@@ -1,0 +1,24 @@
+1. `cargo generate cloudflare/workers-rs` 
+2. pick "hello-world-http"
+3. code sample
+```rs
+use worker::*;
+
+#[event(fetch)]
+async fn fetch(
+    req: Request,
+    env: Env,
+    _ctx: Context,
+) -> Result<Response> {
+
+    Router::new()
+        .get_async("/someroute", handler)
+        .run(req, env).await
+}
+
+async fn handler(req: Request, _ctx: RouteContext<()>) -> Result<Response> {
+    todo!()
+}
+```
+4. `npx wrangler dev` to test
+5. `npx wrangler deploy`

@@ -1,10 +1,18 @@
 use worker::*;
 use serde::{Serialize, Deserialize};
+use reqwest::Client;
 
 #[derive(Debug, Serialize, Deserialize)]
 struct Greeting {
     name: String,
     message: String
+}
+
+// THIS is not possible, because both things live outside the crate
+impl From<reqwest::Error> for worker::Error {
+    fn from(error: reqwest::Error) -> Self {
+        worker::Error::RustError(error.to_string())
+    }
 }
 
 #[event(fetch)]
@@ -26,6 +34,19 @@ async fn fetch(
             let g = Greeting { name, message };
 
             Response::from_json(&g)
+        })
+        .get_async("/external", |_, _| async move {
+            let client = Client::new();
+            let url = "https://api.example.com/data";
+
+            let html = client.get(url)
+                .send()
+                .await?
+                .error_for_status()?
+                .text()
+                .await?;
+
+            Response::ok(html)
         })
         .run(req, env).await
 }

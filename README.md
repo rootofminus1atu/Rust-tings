@@ -1,2 +1,2 @@
 # Rust-tings
- cpyhask
+ rust code-samples and semi-projects

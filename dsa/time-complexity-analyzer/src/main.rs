@@ -22,8 +22,6 @@ where
 
 
 
-// fn compare(f1, f2)  // this would be an iterator (close to a generator), so that we could iterate and generate a sequence of f1/f2 to see if it converges to 1
-
 struct CompareIterator<F1, F2>
 where 
     F1: Fn(usize, &mut usize),
@@ -91,6 +89,31 @@ fn log_n(n: usize, counter: &mut usize) {
     }
 }
 
+
+macro_rules! n_k_log_n {
+    ($name:ident, $k:expr) => {
+        fn $name(n: usize, counter: &mut usize) {
+            fn inner(n: usize, counter: &mut usize, depth: usize) {
+                if depth == 0 {
+                    let mut j = n;
+                    while j > 1 {
+                        j /= 2;
+                        *counter += 1;
+                    }
+                } else {
+                    for _ in 0..n {
+                        inner(n, counter, depth - 1);
+                    }
+                }
+            }
+
+            inner(n, counter, $k);
+        }
+    };
+}
+
+n_k_log_n!(n_log_n, 1);
+
 fn to_be_compared_with(n: usize, counter: &mut usize) {
     for i in 0..n {
         for j in i..n {
@@ -99,8 +122,48 @@ fn to_be_compared_with(n: usize, counter: &mut usize) {
     }
 }
 
+fn n_k_log_n2(k: usize) -> impl Fn(usize, &mut usize) {
+    move |n: usize, counter: &mut usize| {
+        fn inner(n: usize, counter: &mut usize, depth: usize) {
+            if depth == 0 {
+                let mut j = n;
+                while j > 1 {
+                    j /= 2;
+                    *counter += 1;
+                }
+            } else {
+                for _ in 0..n {
+                    inner(n, counter, depth - 1);
+                }
+            }
+        }
+
+        inner(n, counter, k);
+    }
+}
+
+/// Note for future self: k from 1 up is valid, 0 shouldn't be used
+fn log_n_k(k: usize) -> impl Fn(usize, &mut usize) {
+    move |n: usize, counter: &mut usize| {
+        fn inner(n: usize, counter: &mut usize, depth: usize) {
+            if depth == 0 {
+                *counter += 1;
+            } else {
+                let mut i = n;
+                while i > 1 {
+                    inner(i, counter, depth - 1);
+                    i /= 2;
+                }
+            }
+        }
+
+        inner(n, counter, k);
+    }
+}
+
+
 fn main() {
-    for ratio in log_n.compare(to_be_compared_with, 0) {
+    for ratio in n_squared.compare(n_k_log_n2(1), 3) {
         println!("ratio: {}", ratio);
         std::thread::sleep(std::time::Duration::from_millis(50));
     }

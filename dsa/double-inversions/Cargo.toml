@@ -1,0 +1,8 @@
+[package]
+name = "double-inversions"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+reqwest = "0.12.7"
+tokio = "1.40.0"

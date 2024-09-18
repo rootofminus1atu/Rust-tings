@@ -79,8 +79,7 @@ impl Cleverbot {
     async fn build_payload(&self, stimulus: &str) -> String {
         let stimulus_str = format!("stimulus={}", pythonic_encode(stimulus));
 
-        let context_str = self.context_queue
-            .read().await
+        let context_str = self.context_queue.read().await
             .get_all()
             .iter()
             .rev()

@@ -5,6 +5,7 @@ use chrono::{DateTime, Utc};
 use md5::{Md5, Digest};
 mod max_queue;
 use percent_encoding::{utf8_percent_encode, AsciiSet, NON_ALPHANUMERIC};
+use std::str::{self, Utf8Error};
 
 const PYTHONIC_NON_ALPHANUMERIC: &AsciiSet = &NON_ALPHANUMERIC
     .remove(b'!')
@@ -32,6 +33,19 @@ const PYTHONIC_NON_ALPHANUMERIC: &AsciiSet = &NON_ALPHANUMERIC
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
     
+
+    let c = CleverbotBuilder::new()
+        .build()
+        .await?;
+
+    let r = c.get_response("are you a bot").await?;
+    println!("h");
+    println!("response: {r}");
+    println!("h");
+
+    return Ok(());
+
+
     let c = CleverbotBuilder::new()
         .with_client(reqwest::Client::new())
         .build()
@@ -57,6 +71,10 @@ enum CleverbotError {
     NoCookieFound,
     #[error(transparent)]
     ReqwestError(#[from] reqwest::Error),
+    #[error("Could not decode the response bytes: {0}")]
+    Utf8Error(#[from] Utf8Error),
+    #[error("Invalid response from Cleverbot API")]
+    InvalidResponseFromCleverbotApi
 }
 
 #[derive(Debug, Clone)]
@@ -87,7 +105,9 @@ impl Cleverbot {
             .map(|(i, text)| format!("&vText{}={}", i + 2, pythonic_encode(text)))
             .collect::<String>();
 
-        let partial_payload = format!("{}{}", stimulus_str, context_str);
+        let cb_settings_str = "&cb_settings_scripting=no&islearning=1&icognoid=wsf&icognocheck=";
+
+        let partial_payload = format!("{}{}{}", stimulus_str, context_str, cb_settings_str);
 
         let hash_input = &partial_payload[7..33];
         let mut hasher = Md5::new();
@@ -95,15 +115,36 @@ impl Cleverbot {
         let finalized = hasher.finalize();
         let magic_ingredient = format!("{:x}", finalized);
 
-        let junk_str = format!("&cb_settings_scripting=no&islearning=1&icognoid=wsf&icognocheck={}", magic_ingredient);
+        let payload = format!("{}{}", partial_payload, magic_ingredient);
 
-        let payload = format!("{}{}", partial_payload, junk_str);
+        println!("payload: {payload}");
 
         payload
     }
 
-    pub async fn get_response(&self) {
-        todo!()
+    async fn send_cleverbot_request(&self, payload: &str) -> Result<String, CleverbotError> {
+        //  "https://www.cleverbot.com/webservicemin?uc=UseOfficialCleverbotAPI"
+        let bytes_res = self.client.post("https://www.cleverbot.com/webservicemin?uc=UseOfficialCleverbotAPI")
+            .body(payload.to_string())
+            .header("cookie", &self.cookie.read().await.clone())
+            // .header("accept-encoding", "gzip, deflate")
+            .header("user-agent", "python-requests/2.32.3")
+            .send()
+            .await?
+            .bytes()
+            .await?;
+        
+        let text = str::from_utf8(&bytes_res)?;
+        let response = text.split('\r').next().ok_or(CleverbotError::InvalidResponseFromCleverbotApi)?;
+
+        Ok(response.into())
+    }
+
+    pub async fn get_response(&self, stimulus: &str) -> Result<String, CleverbotError> {
+        let payload = self.build_payload(stimulus).await;
+        let answer = self.send_cleverbot_request(&payload).await?;
+
+        Ok(answer)
     }
 }
 
@@ -124,6 +165,9 @@ impl CleverbotBuilder {
     pub async fn build(self) -> Result<Cleverbot, CleverbotError> {
         let client = self.client.unwrap_or_else(reqwest::Client::new);
         let cookie = get_cookie(client.clone()).await?;
+        println!("cookie: {cookie}");
+        // TE1939AFFIAGAYQZN8T32
+        // TE1939AFFIAGAYQZN8T31
 
         Ok(Cleverbot {
             cookie: Arc::new(AsyncRwLock::new(cookie)),
@@ -145,7 +189,7 @@ async fn get_cookie(client: reqwest::Client) -> Result<String, CleverbotError> {
         .and_then(|s| s.split(';').next());
 
     let cookie_str = cookie_before
-        .map(|s| s.replace("B%", "31"));  // i have no idea why 31 works, but it's the only one that does
+        .map(|s| s.replace("B%", "32"));  // i have no idea why 31 works, but it's the only one that does
 
     // info!("new cookie before: {:?}", cookie_before);
     // info!("new cookie after:  {:?}", cookie_str);

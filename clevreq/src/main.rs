@@ -2,32 +2,22 @@ use max_queue::MaxQueue;
 use tokio::sync::RwLock as AsyncRwLock;
 use std::sync::Arc;
 use chrono::{DateTime, Utc};
-use md5::{Md5, Digest};
 mod max_queue;
 use percent_encoding::{utf8_percent_encode, AsciiSet, NON_ALPHANUMERIC};
 use std::str::{self, Utf8Error};
 
-const PYTHONIC_NON_ALPHANUMERIC: &AsciiSet = &NON_ALPHANUMERIC
-    .remove(b'!')
-    .remove(b'#')
-    .remove(b'$')
-    .remove(b'%')
-    .remove(b'&')
-    .remove(b'\'')
-    .remove(b'(')
-    .remove(b')')
-    .remove(b'*')
-    .remove(b'+')
-    .remove(b',')
-    .remove(b'/')
-    .remove(b':')
-    .remove(b';')
-    .remove(b'=')
-    .remove(b'?')
-    .remove(b'@')
-    .remove(b'[')
-    .remove(b']')
-    .remove(b'~');
+
+macro_rules! remove_many {
+    ($set:expr, [$($char:literal),*]) => {
+      ($set$(.remove($char))*)  
+    };
+}
+/// pythonic safe chars: `!#$%&'()*+,/:;=?@[]~`
+const PYTHONIC_NON_ALPHANUMERIC: &AsciiSet = &remove_many!(
+    NON_ALPHANUMERIC, 
+    [b'!', b'#', b'$', b'%', b'&', b'\'', b'(', b')', b'*', b'+', b',', b'/', b':', b';', b'=', b'?', b'@', b'[', b']', b'~']
+);
+
 
 
 #[tokio::main]
@@ -38,7 +28,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>
         .build()
         .await?;
 
-    let r = c.get_response("are you a bot").await?;
+    let r = c.get_response("\\r").await?;
     println!("h");
     println!("response: {r}");
     println!("h");
@@ -74,14 +64,19 @@ enum CleverbotError {
     #[error("Could not decode the response bytes: {0}")]
     Utf8Error(#[from] Utf8Error),
     #[error("Invalid response from Cleverbot API")]
-    InvalidResponseFromCleverbotApi
+    InvalidResponseFromCleverbotApi,
+    #[error("Bad response from Cleverbot API")]
+    BadResponse,
+    #[error("Bad response from Cleverbot API after retrying")]
+    BadResponseAfterRetrying
 }
 
 #[derive(Debug, Clone)]
 struct Cleverbot {
     cookie: Arc<AsyncRwLock<String>>,
     context_queue: Arc<AsyncRwLock<MaxQueue<String>>>,
-    client: reqwest::Client
+    client: reqwest::Client,
+    with_retries: bool,
 }
 
 /// TIL that python's requests' `requests.utils.requote_uri(s)` uses "!#$%&'()*+,/:;=?@[]~" as safe chars, ok i guess
@@ -109,11 +104,7 @@ impl Cleverbot {
 
         let partial_payload = format!("{}{}{}", stimulus_str, context_str, cb_settings_str);
 
-        let hash_input = &partial_payload[7..33];
-        let mut hasher = Md5::new();
-        hasher.update(hash_input.as_bytes());
-        let finalized = hasher.finalize();
-        let magic_ingredient = format!("{:x}", finalized);
+        let magic_ingredient = format!("{:x}", md5::compute(&partial_payload[7..33]));
 
         let payload = format!("{}{}", partial_payload, magic_ingredient);
 
@@ -123,7 +114,6 @@ impl Cleverbot {
     }
 
     async fn send_cleverbot_request(&self, payload: &str) -> Result<String, CleverbotError> {
-        //  "https://www.cleverbot.com/webservicemin?uc=UseOfficialCleverbotAPI"
         let bytes_res = self.client.post("https://www.cleverbot.com/webservicemin?uc=UseOfficialCleverbotAPI")
             .body(payload.to_string())
             .header("cookie", &self.cookie.read().await.clone())
@@ -133,6 +123,8 @@ impl Cleverbot {
             .await?
             .bytes()
             .await?;
+
+        println!("bytes_res: {:?}", bytes_res);
         
         let text = str::from_utf8(&bytes_res)?;
         let response = text.split('\r').next().ok_or(CleverbotError::InvalidResponseFromCleverbotApi)?;
@@ -144,17 +136,45 @@ impl Cleverbot {
         let payload = self.build_payload(stimulus).await;
         let answer = self.send_cleverbot_request(&payload).await?;
 
-        Ok(answer)
+        if !Self::is_bad_cleverbot_response(&answer) {
+            return Ok(answer)
+        }
+
+        if !self.with_retries {
+            return Err(CleverbotError::BadResponse);
+        }
+
+        // now we retrying
+        let new_cookie = get_cookie(&self.client).await?;
+        *self.cookie.write().await = new_cookie;
+        let new_answer = self.send_cleverbot_request(&payload).await?;
+
+        if !Self::is_bad_cleverbot_response(&new_answer) {
+            return Ok(new_answer)
+        }
+
+        Err(CleverbotError::BadResponseAfterRetrying)
+    }
+
+    fn is_bad_cleverbot_response(response: &str) -> bool {
+        match response {
+            "Hello from Cleverbot\n" | "<html" => true,
+            _ => false
+        }
     }
 }
 
 struct CleverbotBuilder {
     client: Option<reqwest::Client>,
+    with_retries: bool,
+    queue_size: Option<usize>,
 }
 
 impl CleverbotBuilder {
+    const DEFAULT_QUEUE_SIZE: usize = 50;
+
     pub fn new() -> Self {
-        Self { client: None }
+        Self { client: None, with_retries: true, queue_size: None }
     }
 
     pub fn with_client(mut self, client: reqwest::Client) -> Self {
@@ -162,24 +182,35 @@ impl CleverbotBuilder {
         self
     }
 
+    /// by default `with_retries` is set to `true`
+    pub fn with_retries(mut self, with_retries: bool) -> Self {
+        self.with_retries = with_retries;
+        self
+    }
+
+    pub fn with_custom_queue_size(mut self, queue_size: usize) -> Self {
+        self.queue_size = Some(queue_size);
+        self
+    }
+
     pub async fn build(self) -> Result<Cleverbot, CleverbotError> {
         let client = self.client.unwrap_or_else(reqwest::Client::new);
-        let cookie = get_cookie(client.clone()).await?;
+        let queue_size = self.queue_size.unwrap_or(Self::DEFAULT_QUEUE_SIZE);
+        let cookie = get_cookie(&client).await?;
         println!("cookie: {cookie}");
-        // TE1939AFFIAGAYQZN8T32
-        // TE1939AFFIAGAYQZN8T31
 
         Ok(Cleverbot {
             cookie: Arc::new(AsyncRwLock::new(cookie)),
-            context_queue: Arc::new(AsyncRwLock::new(MaxQueue::<String>::new(50))),
-            client
+            context_queue: Arc::new(AsyncRwLock::new(MaxQueue::<String>::new(queue_size))),
+            client,
+            with_retries: self.with_retries
         })
     }
 }
 
 
 
-async fn get_cookie(client: reqwest::Client) -> Result<String, CleverbotError> {
+async fn get_cookie(client: &reqwest::Client) -> Result<String, CleverbotError> {
     let url = format!("https://www.cleverbot.com/extras/conversation-social-min.js?{}", get_date());
     let resp = client.get(&url).send().await?;
 
@@ -189,7 +220,7 @@ async fn get_cookie(client: reqwest::Client) -> Result<String, CleverbotError> {
         .and_then(|s| s.split(';').next());
 
     let cookie_str = cookie_before
-        .map(|s| s.replace("B%", "32"));  // i have no idea why 31 works, but it's the only one that does
+        .map(|s| s.replace("B%", "32"));  // i have no idea why 31 ore 32 work, but other ones don't
 
     // info!("new cookie before: {:?}", cookie_before);
     // info!("new cookie after:  {:?}", cookie_str);

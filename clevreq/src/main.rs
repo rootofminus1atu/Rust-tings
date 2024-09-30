@@ -78,9 +78,6 @@ enum CleverbotError {
 }
 
 /// Cleverbot client for interacting with the Cleverbot API.
-/// 
-/// @GITHUB_COPILOT - please write more stuff here, mention that the only way of creating this is using `CleverbotBuild`,
-/// also write a simple example of using this thing
 #[derive(Debug, Clone)]
 struct Cleverbot {
     cookie: Arc<AsyncRwLock<String>>,
@@ -90,7 +87,6 @@ struct Cleverbot {
 }
 
 impl Cleverbot {
-    /// @GITHUB_COPILOT - please write docs for this
     pub async fn get_response(&self, stimulus: &str) -> Result<String, CleverbotError> {
         let payload = self.build_payload(stimulus).await;
         let answer = self.send_cleverbot_request(&payload).await?;

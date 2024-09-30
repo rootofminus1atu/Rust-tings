@@ -11,7 +11,8 @@ use std::str::{self, Utf8Error};
 // - docs
 // - examples
 // - turn prints into tracing::debug!()
-// - tests? but how? like the responses will differ
+// - tests? but how? like the responses will differ since it's an api request to an ai that is statistical not deterministic
+// - rewrite the logic of the respond() fn for better code flow and less code duplications
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>> {
@@ -35,16 +36,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync + 'static>
         .build()
         .await?;
 
-    c.context_queue.write().await.push_back("are you a bot !#$%&'()*+,/:;=?@[]~ \\\n\tetcEND".into());
-    c.context_queue.write().await.push_back("no !#$&'()*+,/:;=?@[]~ END".into());
-    c.context_queue.write().await.push_back("how are you".into());
-    c.context_queue.write().await.push_back("!#$%&'()*+,/:;=?@[]~\\\n\t\"<>^`{|}\x00\x01\x02\x03\x04\x05\x06\x07\x08\x0B\x0C\x0E\x0F\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1A\x1B\x1C\x1D\x1E\x1F\x7F".into());
+    c.history.write().await.push_back("are you a bot !#$%&'()*+,/:;=?@[]~ \\\n\tetcEND".into());
+    c.history.write().await.push_back("no !#$&'()*+,/:;=?@[]~ END".into());
+    c.history.write().await.push_back("how are you".into());
+    c.history.write().await.push_back("!#$%&'()*+,/:;=?@[]~\\\n\t\"<>^`{|}\x00\x01\x02\x03\x04\x05\x06\x07\x08\x0B\x0C\x0E\x0F\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1A\x1B\x1C\x1D\x1E\x1F\x7F".into());
 
     let p = c.build_payload("some stim :) !#$%&'()*+,/:;=?@[]~ END").await;
     dbg!(&p);
 
-
-    println!("Hello, world!");
 
     Ok(())
 }
@@ -72,33 +71,37 @@ enum CleverbotError {
     Utf8Error(#[from] Utf8Error),
     #[error("Invalid response from Cleverbot API")]
     InvalidResponseFromCleverbotApi,
-    #[error("Bad response from Cleverbot API")]
-    BadResponse,
-    #[error("Bad response from Cleverbot API after retrying")]
-    BadResponseAfterRetrying
+    #[error("Bad response from Cleverbot API: {0}")]
+    BadResponse(String),
+    #[error("Bad response from Cleverbot API after retrying: {0}")]
+    BadResponseAfterRetrying(String),
 }
 
-
+/// Cleverbot client for interacting with the Cleverbot API.
+/// 
+/// @GITHUB_COPILOT - please write more stuff here, mention that the only way of creating this is using `CleverbotBuild`,
+/// also write a simple example of using this thing
 #[derive(Debug, Clone)]
 struct Cleverbot {
     cookie: Arc<AsyncRwLock<String>>,
-    context_queue: Arc<AsyncRwLock<MaxQueue<String>>>,
+    history: Arc<AsyncRwLock<MaxQueue<String>>>,
     client: reqwest::Client,
     with_retries: bool,
 }
 
 impl Cleverbot {
+    /// @GITHUB_COPILOT - please write docs for this
     pub async fn get_response(&self, stimulus: &str) -> Result<String, CleverbotError> {
         let payload = self.build_payload(stimulus).await;
         let answer = self.send_cleverbot_request(&payload).await?;
 
         if !Self::is_bad_cleverbot_response(&answer) {
+            (*self.history.write().await).push_front(answer.clone());
             return Ok(answer)
         }
 
-        // include the bad response
         if !self.with_retries {
-            return Err(CleverbotError::BadResponse);
+            return Err(CleverbotError::BadResponse(answer));
         }
 
         // now we retrying
@@ -107,17 +110,17 @@ impl Cleverbot {
         let new_answer = self.send_cleverbot_request(&payload).await?;
 
         if !Self::is_bad_cleverbot_response(&new_answer) {
+            (*self.history.write().await).push_front(new_answer.clone());
             return Ok(new_answer)
         }
 
-        // include the bad response here too
-        Err(CleverbotError::BadResponseAfterRetrying)
+        Err(CleverbotError::BadResponseAfterRetrying(new_answer))
     }
 
     async fn build_payload(&self, stimulus: &str) -> String {
         let stimulus_str = format!("stimulus={}", pythonic_encode(stimulus));
 
-        let context_str = self.context_queue.read().await
+        let context_str = self.history.read().await
             .get_all()
             .iter()
             .rev()
@@ -133,7 +136,7 @@ impl Cleverbot {
 
         let payload = format!("{}{}", partial_payload, magic_ingredient);
 
-        println!("payload: {payload}");
+        tracing::debug!("clevreq payload: {payload}");
 
         payload
     }
@@ -149,7 +152,7 @@ impl Cleverbot {
             .bytes()
             .await?;
 
-        println!("bytes_res: {:?}", bytes_res);
+        tracing::debug!("clevreq bytes_res: {:?}", bytes_res);
         
         let text = str::from_utf8(&bytes_res)?;
         let response = text.split('\r').next().ok_or(CleverbotError::InvalidResponseFromCleverbotApi)?;
@@ -165,11 +168,13 @@ impl Cleverbot {
     }
 }
 
-
+/// Builder for constructing a `Cleverbot` instance.
+/// 
+/// 
 struct CleverbotBuilder {
     client: reqwest::Client,
     with_retries: bool,
-    queue_size: usize,
+    history_size: usize,
 }
 
 impl Default for CleverbotBuilder {
@@ -177,7 +182,7 @@ impl Default for CleverbotBuilder {
         Self { 
             client: reqwest::Client::new(), 
             with_retries: true, 
-            queue_size: Self::DEFAULT_QUEUE_SIZE 
+            history_size: Self::DEFAULT_QUEUE_SIZE 
         }
     }
 }
@@ -190,14 +195,15 @@ impl CleverbotBuilder {
         self
     }
 
-    /// by default `with_retries` is set to `true`
+    /// Enable or disable retries. By default, retries are enabled.
     pub fn with_retries(mut self, with_retries: bool) -> Self {
         self.with_retries = with_retries;
         self
     }
 
-    pub fn with_custom_queue_size(mut self, queue_size: usize) -> Self {
-        self.queue_size = queue_size;
+    /// Use a custom history size for storing the chat history.
+    pub fn with_custom_history_size(mut self, history_size: usize) -> Self {
+        self.history_size = history_size;
         self
     }
 
@@ -207,7 +213,7 @@ impl CleverbotBuilder {
 
         Ok(Cleverbot {
             cookie: Arc::new(AsyncRwLock::new(cookie)),
-            context_queue: Arc::new(AsyncRwLock::new(MaxQueue::<String>::new(self.queue_size))),
+            history: Arc::new(AsyncRwLock::new(MaxQueue::<String>::new(self.history_size))),
             client: self.client,
             with_retries: self.with_retries
         })

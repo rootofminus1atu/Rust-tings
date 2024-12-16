@@ -5,9 +5,15 @@
     <title>Wasm Canvas</title>
 </head>
 <body>
-    <canvas id="canvas" width="150" height="150"></canvas>
+    <style>
+        html, body {
+            margin: 0;
+        }
+    </style>
+    <canvas id="canvas" width="200" height="200"></canvas>
     <script type="module">
         import init from './pkg/wasm_canvas.js';
+        // import { start } from './pkg/wasm_canvas.js';
         init();
     </script>
 </body>

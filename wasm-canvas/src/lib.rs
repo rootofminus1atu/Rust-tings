@@ -18,7 +18,10 @@ impl<'a> CoordinateSystem<'a> {
     }
 
     pub fn draw_rect(&self, c: Coord, w: f64, h: f64) {
-
+        let c = c.to_cs(self.location);
+        self.context.begin_path();
+        self.context.rect(c.x, c.y, w, h);
+        self.context.stroke();
     }
 
     pub fn draw_line(&self, from: Coord, to: Coord) {
@@ -27,6 +30,17 @@ impl<'a> CoordinateSystem<'a> {
         draw_line(from, to, self.context);
     }
 }
+
+fn draw_line(from: Coord, to: Coord, context: &CanvasRenderingContext2d) {
+    context.begin_path();
+    context.move_to(from.x, from.y);
+    context.line_to(to.x, to.y);
+    context.stroke();
+}
+
+// fn draw_rect(context: &CanvasRenderingContext2d) {
+//     context.rect(x, y, w, h);
+// }
 
 #[derive(Debug, Clone, Copy)]
 pub struct Coord {
@@ -79,6 +93,8 @@ fn start() {
 
     cs.draw_line(Coord::newi(0, 0), Coord::newi(30, 10));
 
+    cs.draw_rect(Coord::newi(0, 0), 30., -10.);
+
     log!("hi");
 
     context.rect(0., 0., 30., 10.);
@@ -89,10 +105,5 @@ fn start() {
 
 }
 
-fn draw_line(from: Coord, to: Coord, context: &CanvasRenderingContext2d) {
-    context.begin_path();
-    context.move_to(from.x, from.y);
-    context.line_to(to.x, to.y);
-    context.stroke();
-}
+
 

@@ -70,6 +70,7 @@ const NA: &'static str = r"
 
 
 fn run() -> Result<(), Box<dyn std::error::Error>> {
+    println!("{}", NA);
     let resp = get("https://ipinfo.io/json")?.json::<IpInfo>()?;
 
     let mut table = Table::new();

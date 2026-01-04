@@ -1,0 +1,4 @@
+Street with blocks numbered 1 to n.
+Walking from s to s + 1 takes 1 minute.
+Taking a magic tram from s to 2s takes 2 minutes.
+How to travel from 1 to n in the least time?
